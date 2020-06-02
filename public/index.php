@@ -1,4 +1,4 @@
 <?php
     require_once '../vendor/autoload.php';
-    echo "Fix Bug7";
+    echo "Fix Bug8";
     

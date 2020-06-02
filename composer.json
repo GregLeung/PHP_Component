@@ -16,9 +16,11 @@
     "autoload": {
         "psr-4": {
             "PHPComponent\\": "src/PHPComponent"
-        },
-        "classmap": [
-        	"src/PHPComponent/Util"
-        ]
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PHPComponent\\": "src/PHPComponent"
+        }
     }
 }
