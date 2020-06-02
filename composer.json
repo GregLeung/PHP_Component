@@ -1,0 +1,11 @@
+{
+    "name": "wailimcheng/php_component",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Cheng Wai Lim",
+            "email": "s1113618@s.eduhk.hk"
+        }
+    ],
+    "require": {}
+}
