@@ -15,7 +15,10 @@
     },
     "autoload": {
         "psr-4": {
-            "PHPComponent\\": "src/PHP_Component"
-        }
+            "PHPComponent\\": "src/PHPComponent"
+        },
+        "classmap": [
+        	"src/PHPComponent/Util"
+        ]
     }
 }
