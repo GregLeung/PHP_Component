@@ -7,5 +7,10 @@
             "email": "s1113618@s.eduhk.hk"
         }
     ],
-    "require": {}
+    "require": {
+        "thingengineer/mysqli-database-class": "dev-master",
+        "phpoffice/phpspreadsheet": "1.11.0",
+        "koolreport/core": "^4.5",
+        "phpmailer/phpmailer": "^6.1"
+    }
 }
