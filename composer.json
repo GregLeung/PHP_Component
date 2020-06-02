@@ -12,5 +12,10 @@
         "phpoffice/phpspreadsheet": "1.11.0",
         "koolreport/core": "^4.5",
         "phpmailer/phpmailer": "^6.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "PHP_Component\\": "src/PHP_Component"
+        }
     }
 }
