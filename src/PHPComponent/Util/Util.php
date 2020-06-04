@@ -1,6 +1,9 @@
 <?php
-require_once  "./phpqrcode/qrlib.php";
+require_once  "../src/PHPComponent/phpqrcode/qrlib.php";
 
+function test(){
+    echo "Testing";
+}
 function isExistedNotNull($object, $key){
     return (array_key_exists($key,$object) && $object[$key] != null);
 }

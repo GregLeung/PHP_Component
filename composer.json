@@ -13,14 +13,10 @@
         "koolreport/core": "^4.5",
         "phpmailer/phpmailer": "^6.1"
     },
-    "autoload": {
-        "psr-4": {
-            "PHPComponent\\": "src/PHPComponent"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "PHPComponent\\": "src/PHPComponent"
-        }
+    "autoload" : {
+        "classmap": [
+            "src/PHPComponent/Util",
+            "src/PHPComponent/Model"
+        ]
     }
 }

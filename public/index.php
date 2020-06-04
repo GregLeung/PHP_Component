@@ -1,4 +1,6 @@
 <?php
     require_once '../vendor/autoload.php';
-    echo "Fix Bug8";
+    $response = new Response(200, "Success", "");
+    DB::getInstance('localhost', 'root', '', 'cmab_event');
+    echo "Fix Bug1";
     
