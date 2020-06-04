@@ -1,8 +1,14 @@
 <?php
 require_once  "../src/PHPComponent/phpqrcode/qrlib.php";
 
-function test(){
-    echo "Testing";
+
+function init(){
+    header("Access-Control-Allow-Origin: *");
+    header('Access-Control-Allow-Methods: POST, GET, DELETE, PUT, PATCH, OPTIONS');
+    header('Access-Control-Allow-Headers: token, Content-Type');
+    header('Access-Control-Max-Age: 1728000');
+    date_default_timezone_set("Asia/Hong_Kong");
+    catchWarningToException();
 }
 function isExistedNotNull($object, $key){
     return (array_key_exists($key,$object) && $object[$key] != null);
