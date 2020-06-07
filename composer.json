@@ -19,6 +19,7 @@
             "src/PHPComponent/phpqrcode/qrlib.php",
             "src/PHPComponent/Util/DB.php",
             "src/PHPComponent/Util/Response.php",
+            "src/PHPComponent/Util/Email.php",
             "src/PHPComponent/Model/BaseModel.php"
         ]
     }
