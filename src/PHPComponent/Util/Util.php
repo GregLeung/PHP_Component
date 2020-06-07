@@ -8,7 +8,6 @@ function init(){
     header('Access-Control-Allow-Headers: token, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
-    catchWarningToException();
 }
 function isExistedNotNull($object, $key){
     return (array_key_exists($key,$object) && $object[$key] != null);
