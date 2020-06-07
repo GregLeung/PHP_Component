@@ -1,7 +1,7 @@
 <?php
     use PHPMailer\PHPMailer\PHPMailer;
     use PHPMailer\PHPMailer\Exception;
-    class Email{
+    class BaseEmail{
         public $mail;
         public function __construct(){
             $this->mail = new PHPMailer(true);
