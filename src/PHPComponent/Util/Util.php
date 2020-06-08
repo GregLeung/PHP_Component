@@ -40,6 +40,14 @@ function generateBaseURL($arrayOfModel, $parameters){
         if($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all"){
             return new Response(200, "Success", array($class::getSelfName()=>DB::get($class)));
         }
+        else if($parameters["ACTION"] == "get_" . $class::getSelfName()){
+            if(!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
+            return new Response(200, "Success", array($class::getSelfName()=>DB::getByID($class, $parameters["ID"])));
+        }
+        else if($parameters["ACTION"] == "insert_" . $class::getSelfName()){
+            DB::insert(filterParameterByClass($parameters, $class), $class);
+            return new Response(200, "Success", array());
+        }
         else if($parameters["ACTION"] == "update_" . $class::getSelfName()){
             DB::update(filterParameterByClass($parameters, $class), $class);
             return new Response(200, "Success", array());
@@ -50,6 +58,7 @@ function generateBaseURL($arrayOfModel, $parameters){
         }
     }
 }
+
 
 function filterParameterByClass($parameters, $class){
     $result = array();
