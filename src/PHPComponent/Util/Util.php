@@ -9,6 +9,11 @@ function init(){
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
 }
+
+function contain($sentence, $value){
+    if (strpos($sentence,$value) !== false) return true;
+    return false;
+}
 function isExistedNotNull($object, $key){
     return (array_key_exists($key,$object) && $object[$key] != null);
 }
