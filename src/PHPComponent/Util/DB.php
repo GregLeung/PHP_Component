@@ -4,6 +4,9 @@ class DB{
     static function getInstance($host, $username, $password, $db){
         if(self::$_conn === null) self::$_conn = new MysqliDb (array ('host' => $host,'username' => $username, 'password' => $password,'db'=> $db, 'charset' => 'utf8mb4'));
     }
+    static function rawQuery($sql){
+        return self::$_conn->rawQuery($sql);
+    }
     static function get($class){
         $modelList = array();
         $rawDataList = self::$_conn->get($class::getSelfName());
