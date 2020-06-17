@@ -1,5 +1,5 @@
 <?php
-namespace PHPComponent;
+namespace PHPComponent\Util;
 use MysqliDb;
 use Exception;
 class DB{
