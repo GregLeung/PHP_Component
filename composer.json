@@ -22,7 +22,7 @@
             "src/PHPComponent/Model/BaseModel.php"
         ],
         "psr-4": {
-            "PHPComponent": "src/PHPComponent"
+            "PHPComponent\\": "src/PHPComponent"
         }
     }
 }
