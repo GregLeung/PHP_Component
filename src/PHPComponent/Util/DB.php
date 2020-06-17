@@ -1,4 +1,7 @@
 <?php
+namespace PHPComponent;
+use MysqliDb;
+use Exception;
 class DB{
     private static $_conn = null;
     static function getInstance($host, $username, $password, $db){
