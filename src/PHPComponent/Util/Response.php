@@ -1,4 +1,5 @@
 <?php
+namespace PHPComponent\Util;
 class Response{
     public $code;
     public $message;
