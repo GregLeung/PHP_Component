@@ -89,5 +89,11 @@ function catchWarningToException(){
 
 function isJSON($string){
     return is_string($string) && is_array(json_decode($string, true)) && (json_last_error() == JSON_ERROR_NONE) ? true : false;
- }
-?>
+}
+
+function readXlsx($xlsx){
+    $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+    $spreadsheet = $reader->load($xlsx);
+    $worksheet = $spreadsheet->getActiveSheet();
+    return $worksheet->toArray();
+}
