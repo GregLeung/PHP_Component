@@ -1,6 +1,5 @@
 <?php
     use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
     class BaseEmail{
         public $mail;
         public function __construct(){

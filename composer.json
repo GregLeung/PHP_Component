@@ -15,7 +15,9 @@
     },
     "autoload" : {
         "files": [
-            "src/PHPComponent/phpqrcode/qrlib.php"
+            "src/PHPComponent/phpqrcode/qrlib.php",
+            "src/PHPComponent/Util/DB.php",
+            "src/PHPComponent/Util/Util.php"
         ],
         "psr-4": {
             "PHPComponent\\": "src/PHPComponent"
