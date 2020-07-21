@@ -1,5 +1,13 @@
 <?php
 class BaseModel{
+    public $createdDate;
+    public $modifiedDate;
+    public $ID;
+    public function __construct($object){
+        $this->ID = $object["ID"];
+        $this->createdDate = $object["createdDate"];
+        $this->modifiedDate = $object["modifiedDate"];
+    }
     public static function getSelfName(){
        return static::class;
     }
@@ -14,12 +22,5 @@ class BaseModel{
       }
       return $result;
   }
-  public static function reportFilter($data, $parameter){
-    if(!array_key_exists('status', $parameter) || $parameter["status"] == null) return $data; 
-    else
-        return array_filter($data, function($v, $k) use($parameter) {
-            return $v->status == $parameter["status"];
-        }, ARRAY_FILTER_USE_BOTH);
-    }
 }
 ?>
