@@ -1,7 +1,7 @@
 <?php
 function init(){
     header("Access-Control-Allow-Origin: *");
-    header('Access-Control-Allow-Methods: POST, GET, DELETE, PUT, PATCH, OPTIONS');
+    header('Access-Control-Allow-Methods: POST, GET');
     header('Access-Control-Allow-Headers: token, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
