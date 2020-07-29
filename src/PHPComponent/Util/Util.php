@@ -5,6 +5,7 @@ function init(){
     header('Access-Control-Allow-Headers: token, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
+    if($_SERVER['REQUEST_METHOD'] == "OPTIONS") die;
 }
 
 function contain($sentence, $value){
