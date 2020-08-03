@@ -18,6 +18,12 @@ class DB{
         }
             return $rawDataList;
     }
+    static function getByWhereCondition($class, $whereConditionList){
+        foreach($whereConditionList as $key => $value){
+            self::$_conn->where ($key, $value);
+        }
+        return new $class(self::$_conn->get($class::getSelfName()));
+    }
 
     //dbObject List = array(array("db" => "Shop", "joinQuery" => "Orders.shopID = Shop.shopID"))
     static function join($db, $dbObjectList){
