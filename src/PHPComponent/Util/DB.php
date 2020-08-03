@@ -18,29 +18,30 @@ class DB{
         }
             return $rawDataList;
     }
-    static function getByWhereCondition($class, $whereConditionList){
-        foreach($whereConditionList as $key => $value){
-            self::$_conn->where ($key, $value);
-        }
-        return new $class(self::$_conn->get($class::getSelfName()));
-    }
 
     //dbObject List = array(array("db" => "Shop", "joinQuery" => "Orders.shopID = Shop.shopID"))
-    static function join($db, $dbObjectList){
+    static function join($db, $dbObjectList, $whereClause = ''){
         $field_query = "";
         $join_query = "";
             foreach ($dbObjectList as $dbObject) {
             $field_query .= ", ". fieldQueryForSelect($dbObject["db"]::getSelfName());
             $join_query .= " LEFT JOIN ". $dbObject["db"]::getSelfName() . " ON " . $dbObject["joinQuery"] . " ";
         }
-        $sql = "SELECT " . $db::getSelfName() .".* " .  $field_query . "FROM " . $db::getSelfName() . " " . $join_query;
+        $sql = "SELECT " . $db::getSelfName() .".* " .  $field_query . "FROM " . $db::getSelfName() . " " . $join_query . $whereClause;
         $data = self::$_conn->rawQuery($sql);
         return $data;
     }
 
     static function getByID($class, $ID){
-        self::$_conn->where ("ID", $ID);
+        self::$_conn->where("ID", $ID);
         return new $class(self::$_conn->get($class::getSelfName())[0]);
+    }
+
+    static function getByWhereCondition($class, $whereConditionList){
+        foreach($whereConditionList as $key => $value){
+            self::$_conn->where($key, $value);
+        }
+        return new $class(self::$_conn->get($class::getSelfName()));
     }
 
     static function getByColumn($class, $column, $value){
