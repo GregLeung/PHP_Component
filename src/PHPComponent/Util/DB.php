@@ -41,7 +41,12 @@ class DB{
         foreach($whereConditionList as $key => $value){
             self::$_conn->where($key, $value);
         }
-        return new $class(self::$_conn->get($class::getSelfName()));
+        $modelList = array();
+        $rawDataList = self::$_conn->get($class::getSelfName());
+        foreach($rawDataList as $data){
+            array_push($modelList,  new $class($data));
+        }
+        return $modelList;
     }
 
     static function getByColumn($class, $column, $value){
