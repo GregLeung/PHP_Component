@@ -5,11 +5,16 @@ function init(){
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
     if($_SERVER['REQUEST_METHOD'] == "OPTIONS") die;
-    // apiKeyChecking();
 }
 
 function readConfig(){
     return json_decode(file_get_contents("./config.json"));
+}
+function getFile($filePath){
+    header('Content-Type: application/octet-stream');
+    header("Content-Transfer-Encoding: Binary"); 
+    header("Content-Disposition: attachment; filename=" . $filePath);
+    readfile($filePath);
 }
 
 function apiKeyChecking(){
