@@ -5,7 +5,7 @@ function init(){
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
     if($_SERVER['REQUEST_METHOD'] == "OPTIONS") die;
-    apiKeyChecking();
+    // apiKeyChecking();
 }
 
 function readConfig(){
