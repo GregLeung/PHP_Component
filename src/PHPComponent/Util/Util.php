@@ -1,11 +1,29 @@
 <?php
 function init(){
-    header("Access-Control-Allow-Origin: *");
     header('Access-Control-Allow-Methods: POST, GET');
-    header('Access-Control-Allow-Headers: token, Content-Type');
+    header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
     if($_SERVER['REQUEST_METHOD'] == "OPTIONS") die;
+    apiKeyChecking();
+}
+
+function readConfig(){
+    return json_decode(file_get_contents("./config.json"));
+}
+
+function apiKeyChecking(){
+    if(getallheaders()['API_KEY'] != readConfig()->API_KEY)
+        throw new Exception('api key checking failed');
+}
+
+function setAllowOrigin($origins = array()){
+    $data = "";
+    foreach($origins as $origin){
+        $data .= $origin . ",";
+    }
+    if(strlen($data) > 0) $data = substr($data, 0, -1);
+    header("Access-Control-Allow-Origin: " . $data);
 }
 
 function contain($sentence, $value){
