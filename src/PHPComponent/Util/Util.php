@@ -17,6 +17,60 @@ function getFile($filePath){
     readfile($filePath);
 }
 
+function getCurrentUser($userClass){
+    try{
+        return DB::getByID($userClass::getSelfName(), DB::getByColumn(Token::class, 'token', getallheaders()['token'])[0]->userID, BaseModel::SYSTEM);
+    }catch(Exception $exception){
+        return null;
+    }
+}
+
+function getRequestToken(){
+    try{
+        return getallheaders()['token'];
+    }catch(Exception $exception){
+        return "";
+    }
+}
+
+function stdClassToArray($classObj){
+    return json_decode(json_encode($classObj), true);
+}
+
+function addToken($user){
+    $config = readConfig();
+    $token = generateRandomString();
+    if(isTokenMoreThanMaximum($user, $config)){
+        $user = removeToken($user);
+    }
+    DB::insert(array("token" => $token, "expiredDate" => time() + 604800, "userID" => $user->ID), Token::class);
+    return $token;
+}
+
+function isTokenMoreThanMaximum($user,$config){
+    return DB::getCount(Token::class, array("userID" => $user->ID)) >= $config->MaximumNumberOfToken;
+}
+
+function removeToken($user){
+    $result = DB::getByColumn(Token::class, "userID", $user->ID)[0];
+    DB::delete($result->ID, Token::class);
+    return $user;
+}
+
+function logOutRemoveToken($token){
+    DB::deleteByWhereCondition(Token::class, array('token'=>$token));
+}
+
+function generateRandomString($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+
 function apiKeyChecking(){
     if(getallheaders()['API_KEY'] != readConfig()->API_KEY)
         throw new Exception('api key checking failed');
@@ -38,9 +92,9 @@ function contain($sentence, $value){
 function isExistedNotNull($object, $key){
     return (array_key_exists($key,$object) && $object[$key] != null && $object[$key] != "");
 }
-function isDBContain($db, $parameters, $dataList = null){
-    if($dataList == null) $dataList = DB::get($db, false);
-    foreach(DB::get($db, false) as $data){
+function isDBContain($db, $parameters){
+    foreach(DB::get($db) as $data){
+        $data = stdClassToArray($data);
         $isMatch = true;
         foreach($parameters as $key => $value){
            if($data[$key] != $value){
@@ -92,13 +146,6 @@ function parseValue($parameters){
         else{
             $result[$key] = $value;
         }
-        // if(isJSONString($value)){
-        //     $parameters[$key] = json_decode($value);
-        //     $parameter[$key] = parseJSON($value);
-        // }else if(is_array($value)){
-        //     $parameters[$key] = json_decode($value);
-        //     $parameter[$key] = parseJSON($value);
-        // }
     }
     return $result;
 }
@@ -106,33 +153,77 @@ function parseValue($parameters){
 function generateBaseURL($arrayOfModel, $parameters){
     foreach ($arrayOfModel as $key => $class) {
         if($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all"){
-            return new Response(200, "Success", array($class::getSelfName()=>DB::get($class)));
+            $class::getPublicCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::get($class, BaseModel::PUBLIC)));
         }
         else if($parameters["ACTION"] == "get_" . $class::getSelfName()){
             if(!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            return new Response(200, "Success", array($class::getSelfName()=>DB::getByID($class, $parameters["ID"])));
+            $class::getPublicCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)));
         }
         else if($parameters["ACTION"] == "insert_" . $class::getSelfName()){
+            $class::insertPublicCheck();
             DB::insert(filterParameterByClass($parameters, $class), $class);
             return new Response(200, "Success", array());
         }
         else if($parameters["ACTION"] == "update_" . $class::getSelfName()){
+            $class::updatePublicCheck();
             DB::update(filterParameterByClass($parameters, $class), $class);
             return new Response(200, "Success", array());
         }
         else if($parameters["ACTION"] == "delete_" . $class::getSelfName()){
+            $class::deleteCheck();
             DB::delete($parameters["ID"], $class);
+            return new Response(200, "Success", array());
+        }
+        else if($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail"){
+            $class::getDetailCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::get($class, BaseModel::DETAIL)));
+        }
+        else if($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail'){
+            if(!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
+            $class::getDetailCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)));
+        }
+        else if($parameters["ACTION"] == "insert_" . $class::getSelfName() . '_detail'){
+            $class::insertDetailCheck();
+            DB::insert(filterParameterByClass($parameters, $class, BaseModel::DETAIL), $class);
+            return new Response(200, "Success", array());
+        }
+        else if($parameters["ACTION"] == "update_" . $class::getSelfName() . '_detail'){
+            $class::updateDetailCheck();
+            DB::update(filterParameterByClass($parameters, $class, BaseModel::DETAIL), $class);
+            return new Response(200, "Success", array());
+        }
+        else if($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_system"){
+            $class::getSystemCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::get($class, BaseModel::SYSTEM)));
+        }
+        else if($parameters["ACTION"] == "get_" . $class::getSelfName() . '_system'){
+            if(!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
+            $class::getSystemCheck();
+            return new Response(200, "Success", array($class::getSelfName()=>DB::getByID($class, $parameters["ID"], BaseModel::SYSTEM)));
+        }
+        else if($parameters["ACTION"] == "insert_" . $class::getSelfName() . '_system'){
+            $class::insertSystemCheck();
+            DB::insert(filterParameterByClass($parameters, $class, BaseModel::SYSTEM), $class);
+            return new Response(200, "Success", array());
+        }
+        else if($parameters["ACTION"] == "update_" . $class::getSelfName() . '_system'){
+            $class::updateSystemCheck();
+            DB::update(filterParameterByClass($parameters, $class, BaseModel::SYSTEM), $class);
             return new Response(200, "Success", array());
         }
     }
 }
 
 
-function filterParameterByClass($parameters, $class){
+function filterParameterByClass($parameters, $class, $mode = BaseModel::PUBLIC){
     $result = array();
-    $classParameterList = get_class_vars($class);
-    foreach ($classParameterList as $key => $value) {
-        if(array_key_exists($key, $parameters)) $result[$key] = $parameters[$key];
+    // $classParameterList = get_class_vars($class);
+    $classParameterList = $class::getFields($mode);
+    foreach ($classParameterList as  $value) {
+        if(array_key_exists($value, $parameters)) $result[$value] = $parameters[$value];
     }
     return $result;
 }

@@ -7,23 +7,24 @@ class DB{
     static function rawQuery($sql){
         return self::$_conn->rawQuery($sql);
     }
-    static function get($class, $isReturnClass = true){
+    static function get($class, $model = BaseModel::PUBLIC){
         $modelList = array();
         $rawDataList = self::$_conn->get($class::getSelfName());
-        if($isReturnClass){
             foreach($rawDataList as $data){
-                array_push($modelList,  new $class($data));
+                array_push($modelList,  new $class($data, $model));
             }
             return $modelList;
-        }
-            return $rawDataList;
     }
-
-    //dbObject List = array(array("db" => "Shop", "joinQuery" => "Orders.shopID = Shop.shopID"))
+    static function getCount($class, $whereConditionList){
+        foreach($whereConditionList as $key => $value){
+            self::$_conn->where($key, $value);
+        }
+        return self::$_conn->getValue($class::getSelfName(), "count(*)");
+    }
     static function join($db, $dbObjectList, $whereClause = ''){
         $field_query = "";
         $join_query = "";
-            foreach ($dbObjectList as $dbObject) {
+        foreach ($dbObjectList as $dbObject) {
             $field_query .= ", ". fieldQueryForSelect($dbObject["db"]::getSelfName());
             $join_query .= " LEFT JOIN ". $dbObject["db"]::getSelfName() . " ON " . $dbObject["joinQuery"] . " ";
         }
@@ -32,29 +33,36 @@ class DB{
         return $data;
     }
 
-    static function getByID($class, $ID){
+    static function getByID($class, $ID, $model = BaseModel::PUBLIC){
         self::$_conn->where("ID", $ID);
-        return new $class(self::$_conn->get($class::getSelfName())[0]);
+        return new $class(self::$_conn->get($class::getSelfName())[0], $model);
     }
 
-    static function getByWhereCondition($class, $whereConditionList){
+    static function deleteByWhereCondition($class,$whereConditionList){
+        foreach($whereConditionList as $key => $value){
+            self::$_conn->where($key, $value);
+        }
+        self::$_conn->delete($class::getSelfName());
+    }
+
+    static function getByWhereCondition($class, $whereConditionList, $model = BaseModel::PUBLIC){
         foreach($whereConditionList as $key => $value){
             self::$_conn->where($key, $value);
         }
         $modelList = array();
         $rawDataList = self::$_conn->get($class::getSelfName());
         foreach($rawDataList as $data){
-            array_push($modelList,  new $class($data));
+            array_push($modelList,  new $class($data, $model));
         }
         return $modelList;
     }
 
-    static function getByColumn($class, $column, $value){
+    static function getByColumn($class, $column, $value, $model = BaseModel::PUBLIC){
         self::$_conn->where ($column, $value);
         $modelList = array();
         $rawDataList = self::$_conn->get($class::getSelfName());
         foreach($rawDataList as $data){
-            array_push($modelList,  new $class($data));
+            array_push($modelList,  new $class($data, $model));
         }
         return $modelList;
     }
@@ -113,9 +121,9 @@ class DB{
     }
 }
 
-function fieldQueryForSelect($class){
+function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC){
     $sql = "";
-    foreach($class::getFields() as $value){
+    foreach($class::getFields($mode) as $value){
         $sql .=  $class::getSelfName() . "." . $value . " as '". $class::getSelfName() . "." . $value . "', ";
     }
     return substr_replace($sql ," ",-2);
