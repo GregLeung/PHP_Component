@@ -9,6 +9,9 @@ abstract class BaseModel
     public $ID;
 
     abstract static function getFields($mode = BaseModel::PUBLIC);
+    static function getPublicCheck(){}
+    static function getDetailCheck(){}
+    static function getSystemCheck(){}
     static function insertPublicCheck(){}
     static function insertDetailCheck(){}
     static function insertSystemCheck(){}
