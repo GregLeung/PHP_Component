@@ -23,7 +23,8 @@
             "src/PHPComponent/Util/Auth.php",
             "src/PHPComponent/Model/BaseModel.php",
             "src/PHPComponent/Model/LoginUser.php",
-            "src/PHPComponent/Model/Token.php"
+            "src/PHPComponent/Model/Token.php",
+            "src/PHPComponent/Model/Log.php"
         ]
     }
 }
