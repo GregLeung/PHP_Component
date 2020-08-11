@@ -2,146 +2,104 @@
 class DB
 {
     private static $_conn = null;
-    static function getInstance($host, $username, $password, $db){
+    static function getInstance($host, $username, $password, $db)
+    {
         if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => $host, 'username' => $username, 'password' => $password, 'db' => $db, 'charset' => 'utf8mb4'));
     }
-    static function rawQuery($sql){
+    static function rawQuery($sql)
+    {
         return self::$_conn->rawQuery($sql);
     }
-    static function insertLog($action, $value = ""){
-        $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser']))?stdClassToArray($GLOBALS['currentUser']):"",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
+    static function insertLog($action, $value = "")
+    {
+        $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
         unset($data['ID']);
-        $result = array();
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $result[$key] = json_encode($value);
-            } else {
-                $result[$key] = $value;
-            }
-        }
-        $id = self::$_conn->insert('Log', $result);
+        $id = self::$_conn->insert('Log', convertParametersToString($data));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
     }
-    static function get($class, $model = BaseModel::PUBLIC)
+    static function getRaw($class, $cols = null)
     {
-        $modelList = array();
-        $rawDataList = self::$_conn->get($class::getSelfName());
-        foreach ($rawDataList as $data) {
-            array_push($modelList,  new $class($data, $model));
-        }
-        self::insertLog("GET", $rawDataList);
+        self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
+        $result = self::$_conn->get($class::getSelfName(), null, $cols);
+        self::insertLog("GET", $result);
+        return $result;
+    }
+    static function getAll($class, $mode = BaseModel::PUBLIC)
+    {
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
         return $modelList;
     }
+
     static function getCount($class, $whereConditionList)
     {
-        foreach ($whereConditionList as $key => $value) {
-            self::$_conn->where($key, $value);
-        }
-        $count = self::$_conn->getValue($class::getSelfName(), "count(*)");
-        self::insertLog("GET COUNT", $count);
+        self::addWhereConditionList($whereConditionList);
+        $count = self::getRaw($class::getSelfName(), "count(*)")[0]['count(*)'];
         return $count;
     }
-    static function join($db, $dbObjectList, $whereClause = '')
-    {
+    static function join($db, $dbObjectList, $whereConditionList = array()){
+        self::addWhereConditionList($whereConditionList);
         $field_query = "";
-        $join_query = "";
         foreach ($dbObjectList as $dbObject) {
-            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName());
-            $join_query .= " LEFT JOIN " . $dbObject["db"]::getSelfName() . " ON " . $dbObject["joinQuery"] . " ";
+            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
+            self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
         }
-        $sql = "SELECT " . $db::getSelfName() . ".* " .  $field_query . "FROM " . $db::getSelfName() . " " . $join_query . $whereClause;
-        $data = self::$_conn->rawQuery($sql);
-        self::insertLog("JOIN", $data);
-        return $data;
+        return self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query);
     }
 
     static function getByID($class, $ID, $model = BaseModel::PUBLIC)
     {
         self::$_conn->where("ID", $ID);
-        $result = new $class(self::$_conn->get($class::getSelfName())[0], $model);
-        self::insertLog("GET BY ID", stdClassToArray($result));
+        $result = new $class(self::getRaw($class::getSelfName())[0], $model);
         return $result;
+    }
+
+    static function getByWhereCondition($class, $whereConditionList, $mode = BaseModel::PUBLIC)
+    {
+        self::addWhereConditionList($whereConditionList);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
+        return $modelList;
+    }
+
+    static function getByColumn($class, $column, $value, $mode = BaseModel::PUBLIC)
+    {
+        self::$_conn->where($column, $value);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
+        return $modelList;
     }
 
     static function deleteByWhereCondition($class, $whereConditionList)
     {
-        $dataForDelete = self::getByWhereCondition($class, $whereConditionList, BaseModel::SYSTEM);
-        self::insertLog("DELETE BY WHERE CONDITION", stdClassToArray($dataForDelete));
-        foreach ($whereConditionList as $key => $value) {
-            self::$_conn->where($key, $value);
-        }
+        self::addWhereConditionList($whereConditionList);
         self::$_conn->delete($class::getSelfName());
     }
-
-    static function getByWhereCondition($class, $whereConditionList, $model = BaseModel::PUBLIC)
-    {
-        foreach ($whereConditionList as $key => $value) {
-            self::$_conn->where($key, $value);
-        }
-        $modelList = array();
-        $rawDataList = self::$_conn->get($class::getSelfName());
-        foreach ($rawDataList as $data) {
-            array_push($modelList,  new $class($data, $model));
-        }
-        self::insertLog("GET BY WHERE CONDITION", $rawDataList);
-        return $modelList;
-    }
-
-    static function getByColumn($class, $column, $value, $model = BaseModel::PUBLIC)
-    {
-        self::$_conn->where($column, $value);
-        $modelList = array();
-        $rawDataList = self::$_conn->get($class::getSelfName());
-        foreach ($rawDataList as $data) {
-            array_push($modelList,  new $class($data, $model));
-        }
-        self::insertLog("GET BY COLUMN", $rawDataList);
-        return $modelList;
-    }
-
-    static function update($parameters, $class)
-    {
+    private static function updateRaw($parameters, $class){
         $parameters = (array) $parameters;
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
         $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters));
-        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(),$parameters["ID"], BaseModel::SYSTEM)));
+        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
     }
-
-    static function delete($ID, $class)
+    static function update($parameters, $class,$mode = BaseModel::PUBLIC)
     {
-        $dataForDelete = self::getByID($class::getSelfName(), $ID, BaseModel::SYSTEM);
-        self::insertLog("DELETE", stdClassToArray($dataForDelete));
-        self::$_conn->where("ID", $ID);
-        $result = self::$_conn->delete($class::getSelfName());
-        if ($result == false) throw new Exception(self::$_conn->getLastError());
+        $parameters = filterParameterByClass($parameters, $class, $mode);
+        self::updateRaw($parameters, $class);
+    }
+    static function delete($ID, $class){
+        self::update(array("ID"=>$ID, "isDeleted"=>1),$class, BaseModel::SYSTEM);
     }
 
-    static function insert($parameters, $class)
-    {
+    static function insert($parameters, $class, $mode = BaseModel::PUBLIC){
+        $parameters = filterParameterByClass($parameters, $class, $mode);
+        return self::insertRaw($parameters, $class);
+    }
+
+    private static function insertRaw($parameters, $class){
         unset($parameters['ID']);
-        $result = array();
-        foreach ($parameters as $key => $value) {
-            if (is_array($value)) {
-                $result[$key] = json_encode($value);
-            } else {
-                $result[$key] = $value;
-            }
-        }
-        $id = self::$_conn->insert($class::getSelfName(), $result);
-        $result['ID'] = $id;
-        self::insertLog("INSERT", $result);
-        if ($id == false) throw new Exception(self::$_conn->getLastError());
-        return $id;
-    }
-
-    static function insertWithID($parameters, $class)
-    {
-        $id = self::$_conn->insert($class::getSelfName(), $parameters);
-        $result['ID'] = $id;
-        self::insertLog("INSERT", $result);
+        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString($parameters));
+        $parameters['ID'] = $id;
+        self::insertLog("INSERT", $parameters);
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         return $id;
     }
@@ -159,6 +117,12 @@ class DB
     static function commit()
     {
         self::$_conn->commit();
+    }
+
+    private static function addWhereConditionList($whereConditionList){
+        foreach ($whereConditionList as $key => $value) {
+            self::$_conn->where($key, $value);
+        }
     }
 }
 
@@ -181,4 +145,13 @@ function convertParametersToString($parameters)
             $result[$key] = $value;
     }
     return $result;
+}
+
+function rawDataListTModelList($rawDataList, $class, $mode)
+{
+    $modelList = array();
+    foreach ($rawDataList as $data) {
+        array_push($modelList,  new $class($data, $mode));
+    }
+    return $modelList;
 }

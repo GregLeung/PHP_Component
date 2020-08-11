@@ -8,16 +8,25 @@ class Log extends BaseModel{
     public $from;
     public $data;
 
-    public static function getFields($mode = BaseModel::PUBLIC){}
-    public function __construct($object){
+    public static function getDetailField(){
+        return array(
+            array("key" => "header", "type"=> BaseTypeEnum::STRING),
+            array("key" => "server", "type"=> BaseTypeEnum::STRING),
+            array("key" => "parameter", "type"=> BaseTypeEnum::STRING),
+            array("key" => "user", "type"=> BaseTypeEnum::STRING),
+            array("key" => "action", "type"=> BaseTypeEnum::STRING),
+            array("key" => "from", "type"=> BaseTypeEnum::STRING),
+            array("key" => "data", "type"=> BaseTypeEnum::STRING),
+        );
+    }
+    public static function getPublicField(){
+        return array();
+    }
+    public static function getFields($mode = BaseModel::PUBLIC){
+        return self::initGetFields(self::getPublicField(), self::getDetailField(), self::getSystemField(), $mode);
+    }
+    public function __construct($object, $mode = BaseModel::PUBLIC){
         parent::__construct($object);
-        $this->header = $object["header"];
-        $this->server = $object["server"];
-        $this->parameter = $object["parameter"];
-        $this->user = $object["user"];
-        $this->action = $object["action"];
-        $this->from = $object["from"];
-        $this->data = $object["data"];
-        $this->createdDate = $object["createdDate"];
+        $this->init($object, self::getPublicField(), self::getDetailField(), self::getSystemField(), $mode);
     }
 }

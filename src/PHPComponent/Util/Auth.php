@@ -15,8 +15,8 @@
             throw new Exception("User Role Invalid");
         }   
 
-        static function checkAuth($userClass, $token, $role = array()){
-            $tokenClass = self::checkToken($token);
+        static function checkAuth($userClass,  $role = array()){
+            $tokenClass = self::checkToken(getRequestToken());
             if(sizeof($role) > 0){
                 self::checkRole(DB::getByColumn($userClass::getSelfName(), 'ID', $tokenClass->userID)[0], $role);
             }

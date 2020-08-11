@@ -13,7 +13,6 @@ function init()
     header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
-    if ($_SERVER['REQUEST_METHOD'] == "OPTIONS") die;
 }
 
 function readConfig()
@@ -125,7 +124,7 @@ function isExistedNotNull($object, $key)
 }
 function isDBContain($db, $parameters)
 {
-    foreach (DB::get($db) as $data) {
+    foreach (DB::getAll($db) as $data) {
         $data = stdClassToArray($data);
         $isMatch = true;
         foreach ($parameters as $key => $value) {
@@ -190,7 +189,7 @@ function generateBaseURL($arrayOfModel, $parameters)
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all") {
             $class::getPublicCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::get($class, BaseModel::PUBLIC)));
+            return new Response(200, "Success", array($class::getSelfName() => DB::getAll($class, BaseModel::PUBLIC)));
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getPublicCheck();
@@ -209,7 +208,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             return new Response(200, "Success", array());
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") {
             $class::getDetailCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::get($class, BaseModel::DETAIL)));
+            return new Response(200, "Success", array($class::getSelfName() => DB::getAll($class, BaseModel::DETAIL)));
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getDetailCheck();
@@ -222,21 +221,6 @@ function generateBaseURL($arrayOfModel, $parameters)
             $class::updateDetailCheck();
             DB::update(filterParameterByClass($parameters, $class, BaseModel::DETAIL), $class);
             return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_system") {
-            $class::getSystemCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::get($class, BaseModel::SYSTEM)));
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_system') {
-            if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            $class::getSystemCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::SYSTEM)));
-        } else if ($parameters["ACTION"] == "insert_" . $class::getSelfName() . '_system') {
-            $class::insertSystemCheck();
-            DB::insert(filterParameterByClass($parameters, $class, BaseModel::SYSTEM), $class);
-            return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "update_" . $class::getSelfName() . '_system') {
-            $class::updateSystemCheck();
-            DB::update(filterParameterByClass($parameters, $class, BaseModel::SYSTEM), $class);
-            return new Response(200, "Success", array());
         }
     }
 }
@@ -245,7 +229,6 @@ function generateBaseURL($arrayOfModel, $parameters)
 function filterParameterByClass($parameters, $class, $mode = BaseModel::PUBLIC)
 {
     $result = array();
-    // $classParameterList = get_class_vars($class);
     $classParameterList = $class::getFields($mode);
     foreach ($classParameterList as  $value) {
         if (array_key_exists($value, $parameters)) $result[$value] = $parameters[$value];
