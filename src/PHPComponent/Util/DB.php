@@ -12,6 +12,9 @@ class DB
     }
     static function insertLog($action, $value = "")
     {
+        $value = json_encode($value);
+        if(strlen( $value) > 60000)
+            $value = substr($value, 0,60000) . '...';
         $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
         unset($data['ID']);
         $id = self::$_conn->insert('Log', convertParametersToString($data));

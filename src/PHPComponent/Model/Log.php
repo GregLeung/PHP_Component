@@ -5,7 +5,6 @@ class Log extends BaseModel{
     public $parameter;
     public $user;
     public $action;
-    public $from;
     public $data;
 
     public static function getDetailField(){
@@ -15,7 +14,6 @@ class Log extends BaseModel{
             array("key" => "parameter", "type"=> BaseTypeEnum::STRING),
             array("key" => "user", "type"=> BaseTypeEnum::STRING),
             array("key" => "action", "type"=> BaseTypeEnum::STRING),
-            array("key" => "from", "type"=> BaseTypeEnum::STRING),
             array("key" => "data", "type"=> BaseTypeEnum::STRING),
         );
     }
