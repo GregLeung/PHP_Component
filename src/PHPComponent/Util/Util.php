@@ -229,6 +229,7 @@ function generateBaseURL($arrayOfModel, $parameters)
 function filterParameterByClass($parameters, $class, $mode = BaseModel::PUBLIC)
 {
     $result = array();
+    $parameters = stdClassToArray($parameters);
     $classParameterList = $class::getFields($mode);
     foreach ($classParameterList as  $value) {
         if (array_key_exists($value, $parameters)) $result[$value] = $parameters[$value];

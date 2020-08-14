@@ -61,7 +61,7 @@ abstract class BaseModel
     }
 
     protected static function initGetFields($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array();
+        $result = array("ID");
         switch ($mode) {
             case BaseModel::SYSTEM:
                 $result = array_merge(array_map(function ($data) { return $data['key']; }, $systemField), $result);
