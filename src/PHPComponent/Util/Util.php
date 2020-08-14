@@ -1,14 +1,14 @@
 <?php
 function init()
 {
-    set_error_handler(function ($severity, $message, $filename, $lineno) {
-        if (error_reporting() == 0) {
-            return;
-        }
-        if (error_reporting() & $severity) {
-            throw new ErrorException($message, 0, $severity, $filename, $lineno);
-        }
-    });
+    // set_error_handler(function ($severity, $message, $filename, $lineno) {
+    //     if (error_reporting() == 0) {
+    //         return;
+    //     }
+    //     if (error_reporting() & $severity) {
+    //         throw new ErrorException($message, 0, $severity, $filename, $lineno);
+    //     }
+    // });
     header('Access-Control-Allow-Methods: POST, GET');
     header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
@@ -45,17 +45,23 @@ function getRequestToken()
     }
 }
 
-function stdClassToArray($classObj)
-{
-    if (is_array($classObj)) {
+function stdClassToArray($classObj){
+    if (is_array($classObj) && sizeof($classObj) > 0 && is_object(current($classObj))) {
         $result = array();
-        foreach ($classObj as $data) {
-            array_push($result, json_decode(json_encode($data), true));
+        foreach ($classObj as $key => $data) {
+           array_push($result, parseStdClass($key));
         }
         return $result;
     } else {
-        return json_decode(json_encode($classObj), true);
+        return parseStdClass($classObj);
     }
+}
+
+function parseStdClass($object){
+    if(is_object($object)) 
+        return json_decode(json_encode($object), true);
+    else
+        return $object;
 }
 
 function addToken($user)
