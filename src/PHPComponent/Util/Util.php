@@ -48,8 +48,8 @@ function getRequestToken()
 function stdClassToArray($classObj){
     if (is_array($classObj) && sizeof($classObj) > 0 && is_object(current($classObj))) {
         $result = array();
-        foreach ($classObj as $key => $data) {
-           array_push($result, parseStdClass($key));
+        foreach ($classObj as $data) {
+           array_push($result, parseStdClass($data));
         }
         return $result;
     } else {
