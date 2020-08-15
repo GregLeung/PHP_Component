@@ -1,14 +1,14 @@
 <?php
 function init()
 {
-    // set_error_handler(function ($severity, $message, $filename, $lineno) {
-    //     if (error_reporting() == 0) {
-    //         return;
-    //     }
-    //     if (error_reporting() & $severity) {
-    //         throw new ErrorException($message, 0, $severity, $filename, $lineno);
-    //     }
-    // });
+    set_error_handler(function ($severity, $message, $filename, $lineno) {
+        if (error_reporting() == 0) {
+            return;
+        }
+        if (error_reporting() & $severity) {
+            throw new ErrorException($message, 0, $severity, $filename, $lineno);
+        }
+    });
     header('Access-Control-Allow-Methods: POST, GET');
     header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
@@ -280,4 +280,34 @@ function readXlsx($xlsx)
     $spreadsheet = $reader->load($xlsx);
     $worksheet = $spreadsheet->getActiveSheet();
     return $worksheet->toArray();
+}
+
+function isContain($array, $field, $value){
+    if (sizeof($array) > 0 && is_object(current($array))) {
+        foreach($array as $data){
+            if($data->$field == $value)
+                return true;
+        }
+        return false;
+    }else{
+        foreach($array as $data){
+            if($data[$field] == $value)
+                return true;
+        }
+        return false;
+    }
+}
+
+function arrayFilterUnique($array, $field){
+    $result = array();
+    foreach($array as $data){
+        if(is_object($data)){
+            if(!isContain($result, $field, $data->$field))
+                array_push($result, $data);
+        }else{
+            if(!isContain($result, $field, $data[$field]))
+                array_push($result, $data);
+        }
+    }
+    return $result;
 }
