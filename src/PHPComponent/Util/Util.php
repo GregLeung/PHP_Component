@@ -13,6 +13,7 @@ function init()
     header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
+    if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) die;
 }
 
 function readConfig()
@@ -308,6 +309,13 @@ function arrayFilterUnique($array, $field){
             if(!isContain($result, $field, $data[$field]))
                 array_push($result, $data);
         }
+    }
+    return $result;
+}
+function map($array, $function){
+    $result = array();
+    foreach($array as $key=> $data){
+        array_push($result, $function($data, $key));
     }
     return $result;
 }
