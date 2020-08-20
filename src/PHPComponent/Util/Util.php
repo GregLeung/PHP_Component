@@ -319,3 +319,13 @@ function map($array, $function){
     }
     return $result;
 }
+
+function filter($array, $function){
+    $result = array();
+    foreach($array as $key=> $data){
+        if($function($data, $key)){
+            array_push($result, $data);
+        }
+    }
+    return $result;
+}
