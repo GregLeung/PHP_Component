@@ -8,6 +8,7 @@ abstract class BaseModel
     public $modifiedDate;
     public $ID;
     public $isDeleted;
+
     static function getSystemField(){
         return array(
             array("key" => "createdDate", "type"=> BaseTypeEnum::STRING),
@@ -18,12 +19,22 @@ abstract class BaseModel
     }
 
     static function getPublicCheck(){}
+    static function getPublicField(){}
     static function getDetailCheck(){}
-    static function insertPublicCheck(){}
-    static function insertDetailCheck(){}
-    static function updatePublicCheck(){}
-    static function updateDetailCheck(){}
-    static function deleteCheck(){}
+    static function getDetailField(){}
+
+    public function filterField($fieldList){
+        $result = array();
+        foreach (stdClassToArray($this) as $classKey => $classValue) {
+            foreach($fieldList as $key => $value){
+                if($classKey == $value){
+                    $result[$classKey] = $classValue;
+                    break;
+                }
+            }
+        }
+        return $result;
+    }
 
     public function __construct($object, $mode = BaseModel::PUBLIC){
         $this->ID = $object["ID"];

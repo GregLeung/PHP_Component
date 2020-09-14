@@ -13,7 +13,7 @@ function init()
     header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
-    if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) die;
+    // if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) die;
 }
 
 function readConfig()
@@ -196,38 +196,23 @@ function generateBaseURL($arrayOfModel, $parameters)
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all") {
             $class::getPublicCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getAll($class, BaseModel::PUBLIC)));
+            return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
+                return $data->filterField($data::getFields(BaseModel::PUBLIC));
+            })));
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getPublicCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)));
-        } else if ($parameters["ACTION"] == "insert_" . $class::getSelfName()) {
-            $class::insertPublicCheck();
-            DB::insert(filterParameterByClass($parameters, $class), $class);
-            return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "update_" . $class::getSelfName()) {
-            $class::updatePublicCheck();
-            DB::update(filterParameterByClass($parameters, $class), $class);
-            return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "delete_" . $class::getSelfName()) {
-            $class::deleteCheck();
-            DB::delete($parameters["ID"], $class);
-            return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") {
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)->filterField($class::getFields(BaseModel::PUBLIC))));
+        } 
+        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") {
             $class::getDetailCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getAll($class, BaseModel::DETAIL)));
+            return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
+                return $data->filterField($class::getFields(BaseModel::DETAIL));
+            })));
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getDetailCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)));
-        } else if ($parameters["ACTION"] == "insert_" . $class::getSelfName() . '_detail') {
-            $class::insertDetailCheck();
-            DB::insert(filterParameterByClass($parameters, $class, BaseModel::DETAIL), $class);
-            return new Response(200, "Success", array());
-        } else if ($parameters["ACTION"] == "update_" . $class::getSelfName() . '_detail') {
-            $class::updateDetailCheck();
-            DB::update(filterParameterByClass($parameters, $class, BaseModel::DETAIL), $class);
-            return new Response(200, "Success", array());
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)->filterField($class::getFields(BaseModel::DETAIL))));
         }
     }
 }
