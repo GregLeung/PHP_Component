@@ -184,8 +184,10 @@ function parseValue($parameters)
             $array = substr($array, 0, -1);
             $value = explode(", ", $array);
             $result[$key] = parseValue($value);
-        } else {
+        } else if(is_bool($value)){
             $result[$key] = $value;
+        }else{
+            $result[$key] = trim($value);
         }
     }
     return $result;

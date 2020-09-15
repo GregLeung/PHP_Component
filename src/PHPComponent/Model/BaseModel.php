@@ -54,7 +54,7 @@ abstract class BaseModel
                     $this->$key = json_decode($object[$data['key']]);
                 break;
                 case BaseTypeEnum::OBJECT:
-                    $this->$key = (isJSONString($object["purchaser"]))?json_decode($object["purchaser"]):array();
+                    $this->$key = (isJSONString($object[$data['key']]))?json_decode($object[$data['key']]):array();
                 break;
             }
         }
@@ -72,7 +72,7 @@ abstract class BaseModel
     }
 
     protected static function initGetFields($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array();
+        $result = array("ID");
         switch ($mode) {
             case BaseModel::SYSTEM:
                 $result = array_merge(array_map(function ($data) { return $data['key']; }, $systemField), $result);
@@ -85,7 +85,7 @@ abstract class BaseModel
     }
 
     protected static function initGetFieldsWithType($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array();
+        $result = array(array("key" => "ID", "type"=> BaseTypeEnum::STRING),);
         switch ($mode) {
             case BaseModel::SYSTEM:
                 $result = array_merge(array_map(function ($data) { return $data; }, $systemField), $result);
