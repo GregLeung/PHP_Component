@@ -72,7 +72,7 @@ abstract class BaseModel
     }
 
     protected static function initGetFields($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array("ID");
+        $result = array();
         switch ($mode) {
             case BaseModel::SYSTEM:
                 $result = array_merge(array_map(function ($data) { return $data['key']; }, $systemField), $result);
@@ -80,6 +80,19 @@ abstract class BaseModel
                 $result = array_merge(array_map(function ($data) { return $data['key']; }, $detailField), $result);
             case BaseModel::PUBLIC:
                 $result = array_merge(array_map(function ($data) { return $data['key']; }, $publicField), $result);
+        }
+        return $result;
+    }
+
+    protected static function initGetFieldsWithType($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
+        $result = array();
+        switch ($mode) {
+            case BaseModel::SYSTEM:
+                $result = array_merge(array_map(function ($data) { return $data; }, $systemField), $result);
+            case BaseModel::DETAIL:
+                $result = array_merge(array_map(function ($data) { return $data; }, $detailField), $result);
+            case BaseModel::PUBLIC:
+                $result = array_merge(array_map(function ($data) { return $data; }, $publicField), $result);
         }
         return $result;
     }

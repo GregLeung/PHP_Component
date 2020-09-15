@@ -80,9 +80,9 @@ class DB
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
-        $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters));
-        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
+        $result = self::$_conn->update($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldWithType(BaseModel::SYSTEM))));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
+        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     }
     static function update($parameters, $class,$mode = BaseModel::PUBLIC)
     {
@@ -100,10 +100,10 @@ class DB
 
     private static function insertRaw($parameters, $class){
         unset($parameters['ID']);
-        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString($parameters));
+        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
         $parameters['ID'] = $id;
-        self::insertLog("INSERT", $parameters);
         if ($id == false) throw new Exception(self::$_conn->getLastError());
+        self::insertLog("INSERT", $parameters);
         return $id;
     }
 
@@ -127,6 +127,22 @@ class DB
             self::$_conn->where($key, $value);
         }
     }
+}
+
+function addDefaultValue($parameters, $fieldTypeList){
+    foreach($fieldTypeList as $field){
+        if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] == null){
+            switch($field["type"]){
+                case BaseTypeEnum::ARRAY:
+                    $parameters[$field["key"]] = "[]";
+                break;
+                case BaseTypeEnum::OBJECT:
+                    $parameters[$field["key"]] = "{}";
+                break;
+            }
+        }
+    }
+    return $parameters;
 }
 
 function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
