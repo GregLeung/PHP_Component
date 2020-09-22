@@ -122,8 +122,13 @@ function setAllowOrigin($origins = array())
 
 function contain($sentence, $value)
 {
-    if (strpos($sentence, $value) !== false) return true;
-    return false;
+    // if (strpos($sentence, $value) !== false) return true;
+    // return false;
+    try{
+        return (strpos($sentence, $value) !== false);
+    }catch(Exception $e){
+        return false;
+    }
 }
 function isExistedNotNull($object, $key)
 {
@@ -184,9 +189,10 @@ function parseValue($parameters)
             $array = substr($array, 0, -1);
             $value = explode(", ", $array);
             $result[$key] = parseValue($value);
-        } else if(is_bool($value)){
+        } else if(is_bool($value) || $value == null){
             $result[$key] = $value;
-        }else{
+        }
+        else{
             $result[$key] = trim($value);
         }
     }
