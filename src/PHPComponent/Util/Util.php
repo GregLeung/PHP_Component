@@ -10,7 +10,7 @@ function init()
         }
     });
     header('Access-Control-Allow-Methods: POST, GET');
-    header('Access-Control-Allow-Headers: token, API_KEY, Content-Type');
+    header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
     // if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) die;
@@ -106,7 +106,7 @@ function generateRandomString($length = 10)
 
 function apiKeyChecking()
 {
-    if (getallheaders()['API_KEY'] != readConfig()->API_KEY)
+    if (getallheaders()['Apikey'] != readConfig()->Apikey)
         throw new Exception('api key checking failed');
 }
 
