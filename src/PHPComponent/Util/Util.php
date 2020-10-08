@@ -9,11 +9,15 @@ function init()
             throw new ErrorException($message, 0, $severity, $filename, $lineno);
         }
     });
-    header('Access-Control-Allow-Methods: POST, GET');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
     header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
     header('Access-Control-Max-Age: 1728000');
     date_default_timezone_set("Asia/Hong_Kong");
-    // if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) die;
+    if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')){
+        $response =  new Response(200, "Success", "");
+        echo $response->send_response();
+        die();
+    }
 }
 
 function readConfig()

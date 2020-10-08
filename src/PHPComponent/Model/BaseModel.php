@@ -9,6 +9,10 @@ abstract class BaseModel
     public $ID;
     public $isDeleted;
 
+    public static function isExisted($id){
+        return (DB::getByID(static::class, $id) != null);
+    }
+
     static function getSystemField(){
         return array(
             array("key" => "createdDate", "type"=> BaseTypeEnum::STRING),

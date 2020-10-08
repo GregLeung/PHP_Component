@@ -52,8 +52,8 @@ class DB
     static function getByID($class, $ID, $model = BaseModel::PUBLIC)
     {
         self::$_conn->where("ID", $ID);
-        $result = new $class(self::getRaw($class::getSelfName())[0], $model);
-        return $result;
+        $result = self::getRaw($class::getSelfName());
+        return (sizeof($result) > 0) ? new $class($result[0], $model) : null;
     }
 
     static function getByWhereCondition($class, $whereConditionList, $mode = BaseModel::PUBLIC)
