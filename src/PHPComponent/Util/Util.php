@@ -126,10 +126,8 @@ function setAllowOrigin($origins = array())
 
 function contain($sentence, $value)
 {
-    // if (strpos($sentence, $value) !== false) return true;
-    // return false;
     try{
-        return (strpos($sentence, $value) !== false);
+        return (strpos(strval($sentence), $value) !== false);
     }catch(Exception $e){
         return false;
     }
