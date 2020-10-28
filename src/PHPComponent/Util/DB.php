@@ -24,7 +24,7 @@ class DB
     {
         self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
         $result = self::$_conn->get($class::getSelfName(), null, $cols);
-        self::insertLog("GET", $result);
+        // self::insertLog("GET", $result);
         return $result;
     }
     static function getAll($class, $mode = BaseModel::PUBLIC)
@@ -82,7 +82,7 @@ class DB
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
         $result = self::$_conn->update($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
-        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
+        // self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     }
     static function update($parameters, $class,$mode = BaseModel::PUBLIC)
     {
@@ -106,7 +106,7 @@ class DB
         $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
         $parameters['ID'] = $id;
         if ($id == false) throw new Exception(self::$_conn->getLastError());
-        self::insertLog("INSERT", $parameters);
+        // self::insertLog("INSERT", $parameters);
         return $id;
     }
 
