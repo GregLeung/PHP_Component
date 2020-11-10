@@ -32,15 +32,6 @@ function getFile($filePath)
     readfile($filePath);
 }
 
-function getCurrentUser($userClass)
-{
-    try {
-        return DB::getByID($userClass::getSelfName(), DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID, BaseModel::SYSTEM);
-    } catch (Throwable $exception) {
-        return null;
-    }
-}
-
 function getRequestToken()
 {
     try {
@@ -69,28 +60,7 @@ function parseStdClass($object){
         return $object;
 }
 
-function addToken($user)
-{
-    $config = readConfig();
-    $token = generateRandomString();
-    if (isTokenMoreThanMaximum($user, $config)) {
-        $user = removeToken($user);
-    }
-    DB::insert(array("token" => $token, "expiredDate" => time() + 604800, "userID" => $user->ID), Token::class);
-    return $token;
-}
 
-function isTokenMoreThanMaximum($user, $config)
-{
-    return DB::getCount(Token::class, array("userID" => $user->ID)) >= $config->MaximumNumberOfToken;
-}
-
-function removeToken($user)
-{
-    $result = DB::getByColumn(Token::class, "userID", $user->ID)[0];
-    DB::delete($result->ID, Token::class);
-    return $user;
-}
 
 function logOutRemoveToken($token)
 {

@@ -1,7 +1,6 @@
 <?php
-class DB
-{
-    private static $_conn = null;
+abstract class DB{
+    public static $_conn = null;
     static function getInstance($host, $username, $password, $db)
     {
         if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => $host, 'username' => $username, 'password' => $password, 'db' => $db, 'charset' => 'utf8mb4'));
@@ -24,6 +23,8 @@ class DB
     {
         self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
         $result = self::$_conn->get($class::getSelfName(), null, $cols);
+        if(method_exists($class, "permissionGetHandling"))
+            $result = $class::permissionGetHandling($result);
         // self::insertLog("GET", $result);
         return $result;
     }
@@ -48,6 +49,23 @@ class DB
         }
         return self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query);
     }
+    
+    // static function getLoginUser($userClass){
+    //     try{
+    //         if(getRequestToken() == "" || getRequestToken() == null)
+    //             return null;
+    //         $userID = self::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
+    //         self::$_conn->where("ID", $userID);
+    //         self::$_conn->where($userClass::getSelfName() . "." .'isDeleted', 0);
+    //         $result = self::$_conn->get($userClass::getSelfName(), null, null);
+    //         if(method_exists($userClass, "loginCheckingHandling"))
+    //             $result = $userClass::loginCheckingHandling($result);
+    //     return new $userClass($result[0], BaseModel::SYSTEM);
+    //     }catch(Exception $e){
+    //         throw $e;
+    //         return null;
+    //     }
+    // }
 
     static function getByID($class, $ID, $model = BaseModel::PUBLIC)
     {
@@ -76,6 +94,8 @@ class DB
         self::$_conn->delete($class::getSelfName());
     }
     private static function updateRaw($parameters, $class){
+        if(method_exists($class, "permissionUpdateHandling") && !$class::permissionUpdateHandling($parameters, self::getByID($class, $parameters["ID"], BaseModel::SYSTEM)))
+            throw new Exception("Role Permission Denied");
         $parameters = (array) $parameters;
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
@@ -93,6 +113,12 @@ class DB
         self::update(array("ID"=>$ID, "isDeleted"=>1),$class, BaseModel::SYSTEM);
     }
 
+    static function realDelete($ID, $class){
+        self::$_conn->where('ID', $ID);
+        if(!self::$_conn->delete($class::getSelfName()))
+            throw new Exception("Delete Error");
+    }
+
     static function insert($parameters, $class, $mode = BaseModel::PUBLIC){
         $parameters = filterParameterByClass($parameters, $class, $mode);
         return self::insertRaw($parameters, $class);
@@ -103,8 +129,9 @@ class DB
 
     private static function insertRaw($parameters, $class){
         unset($parameters['ID']);
+        if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
+            throw new Exception("Role Permission Denied");
         $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
-        $parameters['ID'] = $id;
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         // self::insertLog("INSERT", $parameters);
         return $id;
