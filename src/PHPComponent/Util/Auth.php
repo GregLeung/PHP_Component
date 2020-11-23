@@ -47,7 +47,7 @@ class Auth
 
     static function login($userClass, $loginName, $password)
     {
-        $result = DB::getByWhereCondition(Staff::class, array("loginName" => $loginName, "password" => $password));
+        $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
         DB::$_conn->where("loginName", $loginName);
         DB::$_conn->where("password", $password);
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);

@@ -21,6 +21,8 @@
             "src/PHPComponent/Util/Response.php",
             "src/PHPComponent/Util/BaseEmail.php",
             "src/PHPComponent/Util/Auth.php",
+            "src/PHPComponent/Util/BaseException.php",
+            "src/PHPComponent/Util/UserAuth.php",
             "src/PHPComponent/Model/BaseModel.php",
             "src/PHPComponent/Model/LoginUser.php",
             "src/PHPComponent/Model/Token.php",
