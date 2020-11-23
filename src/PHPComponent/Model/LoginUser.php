@@ -4,6 +4,15 @@ abstract class LoginUser extends BaseModel{
     public $loginName; 
     public $type; 
 
+    static function getCurrentType(){
+        try{
+            if($GLOBALS['currentUser'] == null) return null;
+            return $GLOBALS['currentUser']->type;
+        }catch(Exception $e){
+            throw $e;
+        }
+    }
+
     public static function getDetailField(){
         return array(
             array("key" => "password", "type"=> BaseTypeEnum::STRING),

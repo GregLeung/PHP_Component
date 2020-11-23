@@ -1,53 +1,29 @@
 <?php
-class Auth
-{
-    static function checkToken($token)
-    {
-        $tokenClass = DB::getByColumn(Token::class, 'token', $token)[0];
-        if (time() > $tokenClass->expiredDate) throw new Exception("Token Expired");
-        return $tokenClass;
-    }
-
-    static function checkRole($user, $roles)
-    {
-        foreach ($roles as $role) {
-            foreach ($user->type as $type) {
-                if ($type == $role) return true;
-            }
+class Auth{
+    static function checkAuth($permission_list){
+        foreach(LoginUser::getCurrentType() as $auth){
+            if(in_array($auth, $permission_list))
+                return true;
         }
-        throw new Exception("User Role Invalid");
-    }
-
-    static function checkAuth($userClass,  $role = array())
-    {
-        $tokenClass = self::checkToken(getRequestToken());
-        if (sizeof($role) > 0) {
-            self::checkRole(DB::getByColumn($userClass::getSelfName(), 'ID', $tokenClass->userID)[0], $role);
-        }
+        throw new BaseException("Permission Denied", -3);
     }
 
     static function getLoginUser($userClass)
     {
-        try {
-            if (getRequestToken() == "" || getRequestToken() == null)
-                return null;
-            if (sizeof(filter(DB::getByColumn(Token::class, 'token', getRequestToken()), function($token){return  time() < $token->expiredDate;})) == 0)
-                throw new Exception("Token invalid");
-            $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
-            DB::$_conn->where("ID", $userID);
-            DB::$_conn->where($userClass::getSelfName() . "." . 'isDeleted', 0);
-            $result = DB::$_conn->get($userClass::getSelfName(), null, null);
-            if (method_exists($userClass, "loginCheckingHandling"))
-                $result = $userClass::loginCheckingHandling($result);
-            return new $userClass($result[0], BaseModel::SYSTEM);
-        } catch (Exception $e) {
+        if (getRequestToken() == "" || getRequestToken() == null)
             return null;
-        }
+        if (sizeof(filter(DB::getByColumn(Token::class, 'token', getRequestToken()), function($token){return  time() < $token->expiredDate;})) == 0)
+            throw new BaseException("Token Invalid", -2);
+        $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
+        DB::$_conn->where("ID", $userID);
+        DB::$_conn->where($userClass::getSelfName() . "." . 'isDeleted', 0);
+        $result = DB::$_conn->get($userClass::getSelfName(), null, null);
+        return new $userClass($result[0], BaseModel::SYSTEM);
     }
 
     static function login($userClass, $loginName, $password)
     {
-        $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
+        $result = DB::getByWhereCondition(Staff::class, array("loginName" => $loginName, "password" => $password));
         DB::$_conn->where("loginName", $loginName);
         DB::$_conn->where("password", $password);
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);
