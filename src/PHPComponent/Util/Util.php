@@ -305,3 +305,9 @@ function filter($array, $function){
     }
     return $result;
 }
+
+function getCurrentUser($userClass){
+    $user = Auth::getLoginUser($userClass);
+    if($user == null)  return null;
+    return $user;
+ }

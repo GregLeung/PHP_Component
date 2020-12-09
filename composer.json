@@ -1,19 +1,17 @@
 {
     "name": "wailimcheng/php_component",
     "type": "library",
-    "authors": [
-        {
-            "name": "Cheng Wai Lim",
-            "email": "s1113618@s.eduhk.hk"
-        }
-    ],
+    "authors": [{
+        "name": "Cheng Wai Lim",
+        "email": "s1113618@s.eduhk.hk"
+    }],
     "require": {
         "thingengineer/mysqli-database-class": "dev-master",
         "phpoffice/phpspreadsheet": "1.11.0",
         "koolreport/core": "^4.5",
         "phpmailer/phpmailer": "^6.1"
     },
-    "autoload" : {
+    "autoload": {
         "files": [
             "src/PHPComponent/phpqrcode/qrlib.php",
             "src/PHPComponent/Util/DB.php",
@@ -22,6 +20,7 @@
             "src/PHPComponent/Util/BaseEmail.php",
             "src/PHPComponent/Util/Auth.php",
             "src/PHPComponent/Util/BaseException.php",
+            "src/PHPComponent/Util/BaseSystem.php",
             "src/PHPComponent/Model/BaseModel.php",
             "src/PHPComponent/Model/UserAuth.php",
             "src/PHPComponent/Model/LoginUser.php",
