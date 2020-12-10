@@ -6,7 +6,7 @@ abstract class LoginUser extends BaseModel{
 
     static function getCurrentType(){
         try{
-            if($GLOBALS['currentUser'] == null) return null;
+            if($GLOBALS['currentUser'] == null) return array();
             return $GLOBALS['currentUser']->type;
         }catch(Exception $e){
             throw $e;
