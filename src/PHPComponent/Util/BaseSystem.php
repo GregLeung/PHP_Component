@@ -1,9 +1,9 @@
 <?php
     class BaseSystem{
-        public object $config;
-        public array $parameters;
-        public ?object $response;
-        public ?string $userClass;
+        public $config;
+        public $parameters;
+        public $response;
+        public $userClass;
         function __construct($classList, $userClass) {
             $this->config = readConfig();
             DB::getInstance('localhost', $this->config->database_account, $this->config->database_password, $this->config->database_name );
@@ -36,6 +36,11 @@
                     if (!isExistedNotNull($this->parameters, "password")) throw new Exception('Password does not existed');
                     if (!isExistedNotNull($this->parameters, "loginName")) throw new Exception('Login Name does not existed');
                     $this->response = new Response(200, "Success", Auth::login($this->userClass, $this->parameters['loginName'], $this->parameters['password']));
+                    break;
+                case "mobile_login":
+                    if (!isExistedNotNull($this->parameters, "password")) throw new Exception('Password does not existed');
+                    if (!isExistedNotNull($this->parameters, "loginName")) throw new Exception('Login Name does not existed');
+                    $this->response = new Response(200, "Success", Auth::login($this->userClass, $this->parameters['loginName'], $this->parameters['password'], 999999999));
                     break;
                 case "user_logout":
                     if (!isExistedNotNull($this->parameters, "token")) throw new Exception('Token does not existed');

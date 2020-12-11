@@ -46,7 +46,7 @@ function getFile($filePath)
 function getRequestToken()
 {
     try {
-        return getallheaders()['Token'];
+        return array_change_key_case(getallheaders(), CASE_LOWER)["token"];
     } catch (Exception $exception) {
         return "";
     }

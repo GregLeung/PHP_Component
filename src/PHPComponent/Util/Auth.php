@@ -21,7 +21,7 @@ class Auth{
         return new $userClass($result[0], BaseModel::SYSTEM);
     }
 
-    static function login($userClass, $loginName, $password)
+    static function login($userClass, $loginName, $password, $expiredTime = 604800)
     {
         $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
         DB::$_conn->where("loginName", $loginName);
@@ -29,18 +29,18 @@ class Auth{
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);
         if (sizeof($result) == 0) throw new Exception('Please enter correct user name or password');
         $user = new $userClass($result[0], BaseModel::SYSTEM);
-        $token = addToken($user);
+        $token = addToken($user, $expiredTime);
         return array("user" => $user, 'token' => $token);
     }
 }
-function addToken($user)
+function addToken($user, $expiredTime = 604800)
 {
     $config = readConfig();
     $token = generateRandomString();
     if (isTokenMoreThanMaximum($user, $config)) {
         $user = removeToken($user);
     }
-    DB::insert(array("token" => $token, "expiredDate" => time() + 604800, "userID" => $user->ID), Token::class);
+    DB::insert(array("token" => $token, "expiredDate" => time() + $expiredTime, "userID" => $user->ID), Token::class);
     return $token;
 }
 
