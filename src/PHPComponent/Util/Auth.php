@@ -14,14 +14,17 @@ class Auth{
             return null;
         if (sizeof(filter(DB::getByColumn(Token::class, 'token', getRequestToken()), function($token){return  time() < $token->expiredDate;})) == 0)
             throw new BaseException("Token Invalid", -2);
-        $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
-        DB::$_conn->where("ID", $userID);
+        // $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
+        $token = DB::getByColumn(Token::class, 'token', getRequestToken())[0];
+        $token->expiredDate = time() + 6048000;
+        DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), Token::class, BaseModel::SYSTEM);
+        DB::$_conn->where("ID", $token->userID);
         DB::$_conn->where($userClass::getSelfName() . "." . 'isDeleted', 0);
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);
         return new $userClass($result[0], BaseModel::SYSTEM);
     }
 
-    static function login($userClass, $loginName, $password, $expiredTime = 604800)
+    static function login($userClass, $loginName, $password, $expiredTime = 6048000)
     {
         $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
         DB::$_conn->where("loginName", $loginName);
@@ -33,7 +36,7 @@ class Auth{
         return array("user" => $user, 'token' => $token);
     }
 }
-function addToken($user, $expiredTime = 604800)
+function addToken($user, $expiredTime = 6048000)
 {
     $config = readConfig();
     $token = generateRandomString();
