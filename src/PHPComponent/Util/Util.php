@@ -1,14 +1,28 @@
 <?php
+initLog();
+function initLog(){
+    if(defined("SITE_ROOT")){
+        date_default_timezone_set("Asia/Hong_Kong");
+        umask(0);
+        if(!file_exists(SITE_ROOT."/log")) 
+            mkdir(SITE_ROOT."log", 0777);
+        register_shutdown_function(function(){
+            $error = error_get_last();
+            writeLog($error["file"], $error["message"], $error["line"]);
+        });
+        set_error_handler(function ($severity, $message, $filename, $lineno) {
+            writeLog($filename, $message, $lineno);
+            if (error_reporting() == 0) {
+            return;
+            }
+            if (error_reporting() & $severity) {
+                throw new ErrorException($message, 0, $severity, $filename, $lineno);
+            }
+        });
+    }
+}
 function init()
 {
-    set_error_handler(function ($severity, $message, $filename, $lineno) {
-        if (error_reporting() == 0) {
-            return;
-        }
-        if (error_reporting() & $severity) {
-            throw new ErrorException($message, 0, $severity, $filename, $lineno);
-        }
-    });
     if (!function_exists('getallheaders')) {
         function getallheaders() {
         $headers = [];
@@ -23,12 +37,21 @@ function init()
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
     header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
     header('Access-Control-Max-Age: 1728000');
-    date_default_timezone_set("Asia/Hong_Kong");
     if(($_SERVER['REQUEST_METHOD'] == 'OPTIONS')){
         $response =  new Response(200, "Success", "");
         echo $response->send_response();
         die();
     }
+}
+
+function writeLog($filename, $message, $line){
+    $fileLocation = SITE_ROOT . "/log/log_" . date("Y-m-d") . ".txt";
+    if(file_exists($fileLocation))
+        $file = fopen($fileLocation,"a");
+    else
+        $file = fopen($fileLocation,"w");
+    fwrite($file, json_encode(array("date" => date("Y-m-d H:i:s"), "message" => $message, "file" => $filename, "line" => $line),));
+    fclose($file);
 }
 
 function readConfig()
@@ -46,7 +69,8 @@ function getFile($filePath)
 function getRequestToken()
 {
     try {
-        return array_change_key_case(getallheaders(), CASE_LOWER)["token"];
+        if(array_key_exists('Token', getallheaders())) return getallheaders()['Token'];
+        else return "";
     } catch (Exception $exception) {
         return "";
     }
@@ -220,16 +244,6 @@ function filterParameterByClass($parameters, $class, $mode = BaseModel::PUBLIC)
     return $result;
 }
 
-function catchWarningToException()
-{
-    set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
-        if (0 === error_reporting()) {
-            return false;
-        }
-
-        throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-    });
-}
 
 
 function isJSONString($string)
