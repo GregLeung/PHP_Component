@@ -8,7 +8,8 @@ function initLog(){
             mkdir(SITE_ROOT."log", 0777);
         register_shutdown_function(function(){
             $error = error_get_last();
-            writeLog($error["file"], $error["message"], $error["line"]);
+            if($error != null)
+                writeLog($error["file"], $error["message"], $error["line"]);
         });
         set_error_handler(function ($severity, $message, $filename, $lineno) {
             writeLog($filename, $message, $lineno);

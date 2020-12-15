@@ -4,19 +4,21 @@
         public $parameters;
         public $response;
         public $userClass;
+        public $classList;
         function __construct($classList, $userClass) {
             $this->config = readConfig();
+            $this->classList = $classList;
             DB::getInstance('localhost', $this->config->database_account, $this->config->database_password, $this->config->database_name );
             setAllowOrigin(array("*"));
             init();
             $this->parameters = getParameter($_POST, $_GET);
-            $this->response = generateBaseURL($classList, $this->parameters);
             $this->userClass = $userClass;
         }
 
         public function ready($function){
             try{
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
+                $this->response = generateBaseURL($this->classList, $this->parameters);
                 $this->response = $function($this->config, $this->parameters, $this->response);
                 $this->loginAPI();
                 if ($this->response == null) throw new Exception("URL Not Found");
