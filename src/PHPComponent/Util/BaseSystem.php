@@ -27,6 +27,7 @@
                 $this->response = new Response($e->code, $e->type, $e->getMessage());
             }catch(Exception $exception){
                 DB::rollback();
+                writeLog($exception->getFile(), $exception->getMessage(), $exception->getLine());
                 if ($exception->getMessage() == null || $exception->getMessage() == "") $response = new Response(-1, "Failed", "URL Not Found");
                 else $this->response = new Response(-1, "Failed", $exception->getMessage());
             }
