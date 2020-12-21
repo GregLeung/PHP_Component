@@ -5,7 +5,7 @@ function initLog(){
         date_default_timezone_set("Asia/Hong_Kong");
         umask(0);
         if(!file_exists(SITE_ROOT."/log")) 
-            mkdir(SITE_ROOT."/log", 0777);
+            mkdir(SITE_ROOT."log", 0777);
         register_shutdown_function(function(){
             $error = error_get_last();
             if($error != null)
@@ -214,21 +214,21 @@ function generateBaseURL($arrayOfModel, $parameters)
             $class::getPublicCheck();
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
                 return $data->filterField($data::getFields(BaseModel::PUBLIC));
-            })));
+            })), true);
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getPublicCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)->filterField($class::getFields(BaseModel::PUBLIC))));
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)->filterField($class::getFields(BaseModel::PUBLIC))), true);
         } 
         else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") {
             $class::getDetailCheck();
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
                 return $data->filterField($class::getFields(BaseModel::DETAIL));
-            })));
+            })), true);
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getDetailCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)->filterField($class::getFields(BaseModel::DETAIL))));
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)->filterField($class::getFields(BaseModel::DETAIL))), true);
         }
     }
 }

@@ -3,11 +3,13 @@ class Response{
     public $code;
     public $message;
     public $data;
+    public $payload;
 
-    public function __construct($code, $message, $data){
+    public function __construct($code, $message, $data, $payload = false){
         $this->code = $code;
         $this->message = $message;
         $this->data = $data;
+        $this->payload = $payload;
         return $this;
     }
     function send_response(){
