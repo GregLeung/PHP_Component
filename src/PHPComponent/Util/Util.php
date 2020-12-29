@@ -5,7 +5,7 @@ function initLog(){
         date_default_timezone_set("Asia/Hong_Kong");
         umask(0);
         if(!file_exists(SITE_ROOT."/log")) 
-            mkdir(SITE_ROOT."log", 0777);
+            mkdir(SITE_ROOT."/log", 0777);
         register_shutdown_function(function(){
             $error = error_get_last();
             if($error != null)
