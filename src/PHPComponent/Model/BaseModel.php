@@ -60,6 +60,9 @@ abstract class BaseModel
                 case BaseTypeEnum::OBJECT:
                     $this->$key = (isJSONString($object[$data['key']]))?json_decode($object[$data['key']]):array();
                 break;
+                case BaseTypeEnum::CHILDREN:
+                    $this->$key = DB::getByColumn($data["childrenClass"], $data["parentField"], $this->ID, BaseModel::SYSTEM);
+                break;
             }
         }
     }
@@ -113,4 +116,5 @@ class BaseTypeEnum{
     const STRING = 0;
     const ARRAY = 1;
     const OBJECT = 2;
+    const CHILDREN = 3;
 }
