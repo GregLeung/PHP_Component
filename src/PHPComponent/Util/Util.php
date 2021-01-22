@@ -51,7 +51,7 @@ function writeLog($filename, $message, $line){
         $file = fopen($fileLocation,"a");
     else
         $file = fopen($fileLocation,"w");
-    fwrite($file, json_encode(array("date" => date("Y-m-d H:i:s"), "message" => $message, "file" => $filename, "line" => $line),));
+    fwrite($file, json_encode(array("date" => date("Y-m-d H:i:s"), "message" => $message, "file" => $filename, "line" => $line),).PHP_EOL);
     fclose($file);
 }
 
