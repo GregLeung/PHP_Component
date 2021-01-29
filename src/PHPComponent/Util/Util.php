@@ -326,3 +326,42 @@ function getCurrentUser($userClass){
     if($user == null)  return null;
     return $user;
  }
+
+ function paging($dataList,$page, $pageSize, $search = "", $sort){
+    $totalRow = 0;
+    if($search != "" && $search != null)
+    $dataList = filter($dataList, function($data, $index) use($page, $pageSize, $search){
+       return (checkSearch($search, $data));
+    });
+    $totalRow = count($dataList);
+    $dataList = sortPaging($dataList, $sort["prop"], $sort["order"]);
+    $dataList = filter($dataList, function($data, $index) use($page, $pageSize, $search){
+       return (checkPaging($index, $page, $pageSize));
+    });
+    return array("data" => $dataList, "totalRow" => $totalRow);
+ }
+ 
+ function checkPaging($index, $page, $pageSize){
+    return ($index >= $page * $pageSize - $pageSize &&  $index < $page * $pageSize);
+ }
+ 
+ function checkSearch($search, $data){
+    if($search == "" || $search == null) return true;
+    foreach ($data as $key => $value) {
+       if (strpos(strtolower(json_encode($value)), strtolower($search)) !== false) 
+          return true;
+   };
+   return false;
+ }
+ 
+ function sortPaging($dataList, $sortProp, $sortOrder){
+    try{
+       if($sortOrder == "ascending")
+          usort($dataList, function ($a, $b) use($sortProp){ return $a[$sortProp] <=> $b[$sortProp];});
+       else
+          usort($dataList, function ($a, $b) use($sortProp){ return $b[$sortProp] <=> $a[$sortProp];});
+    }catch(Exception $e){
+       return $dataList;
+    }
+   return $dataList;
+ }

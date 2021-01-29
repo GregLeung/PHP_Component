@@ -47,7 +47,7 @@ abstract class DB{
             $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
             self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
         }
-        return self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query);
+        return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
     }
     
     // static function getLoginUser($userClass){
