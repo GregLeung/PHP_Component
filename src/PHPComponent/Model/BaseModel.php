@@ -23,9 +23,13 @@ abstract class BaseModel
     }
 
     static function getPublicCheck(){}
-    static function getPublicField(){}
+    static function getPublicField(){
+        return array();
+    }
     static function getDetailCheck(){}
-    static function getDetailField(){}
+    static function getDetailField(){
+        return array();
+    }
 
     public function filterField($fieldList){
         $result = array();
@@ -40,19 +44,23 @@ abstract class BaseModel
         return $result;
     }
 
-    public function __construct($object, $mode = BaseModel::PUBLIC){
+    public function __construct($object, $mode = BaseModel::PUBLIC, $options = array()){
         $this->ID = $object["ID"];
-        if($mode == BaseModel::SYSTEM){
-            $this->assignField($object, self::getSystemField());
+        if($mode === BaseModel::SYSTEM){
+            $this->assignField($object, self::getSystemField(), $options);
         }
     }
 
-    protected function assignField($object, $fieldArray){
+    protected function assignField($object, $fieldArray, $options = array()){
         foreach($fieldArray as $data) {
             $key = $data['key'];
             switch($data['type']){
                 case BaseTypeEnum::STRING:
                     $this->$key = $object[$data['key']];
+                break;
+                case BaseTypeEnum::NUMBER:
+                    if(($object[$data['key']] == null)) $this->$key = null;
+                    else $this->$key = ($object[$data['key']] == (int) $object[$data['key']]) ? (int) $object[$data['key']] : (float) $object[$data['key']];
                 break;
                 case BaseTypeEnum::ARRAY:
                     $this->$key = json_decode($object[$data['key']]);
@@ -60,21 +68,29 @@ abstract class BaseModel
                 case BaseTypeEnum::OBJECT:
                     $this->$key = (isJSONString($object[$data['key']]))?json_decode($object[$data['key']]):array();
                 break;
-                case BaseTypeEnum::CHILDREN:
-                    $this->$key = DB::getByColumn($data["childrenClass"], $data["parentField"], $this->ID, BaseModel::SYSTEM);
+                case BaseTypeEnum::TO_MULTI:
+                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))
+                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID, BaseModel::SYSTEM, $options);
+                break;
+                case BaseTypeEnum::TO_SINGLE:
+                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))
+                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]}, BaseModel::SYSTEM, $options);
+                break;
+                case BaseTypeEnum::Boolean:
+                    $this->$key = ($object[$data['key']] === 1) ? true : false ;
                 break;
             }
         }
     }
 
-    protected function init($object, $publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
+    protected function init($object, $publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC, $options = array()){
         switch ($mode) {
             case BaseModel::SYSTEM:
-                $this->assignField($object, $systemField); 
+                $this->assignField($object, $systemField, $options); 
             case BaseModel::DETAIL:
-                $this->assignField($object, $detailField);
+                $this->assignField($object, $detailField, $options);
             case BaseModel::PUBLIC:
-                $this->assignField($object, $publicField);
+                $this->assignField($object, $publicField, $options);
         }
     }
 
@@ -104,6 +120,14 @@ abstract class BaseModel
         return $result;
     }
 
+    public static function getRealFields(){
+        return map(filter(array_merge(static::getPublicField(), static::getDetailField(), static::getSystemField()), function($data, $key){
+            return !($data["type"] === BaseTypeEnum::TO_MULTI || $data["type"] === BaseTypeEnum::TO_SINGLE);
+        }), function($data, $key){
+            return $data["key"];
+        });
+    }
+
     public static function getSelfName(){
         return static::class;
     }
@@ -116,5 +140,8 @@ class BaseTypeEnum{
     const STRING = 0;
     const ARRAY = 1;
     const OBJECT = 2;
-    const CHILDREN = 3;
+    const TO_MULTI = 3;
+    const TO_SINGLE = 4;
+    const NUMBER = 5;
+    const Boolean = 6;
 }

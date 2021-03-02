@@ -100,7 +100,7 @@ function parseStdClass($object){
 
 function logOutRemoveToken($token)
 {
-    DB::deleteByWhereCondition(Token::class, array('token' => $token));
+    DB::deleteRealByWhereCondition(Token::class, array('token' => $token));
 }
 
 function generateRandomString($length = 10)
@@ -228,17 +228,33 @@ function generateBaseURL($arrayOfModel, $parameters)
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             $class::getDetailCheck();
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL)->filterField($class::getFields(BaseModel::DETAIL))), true);
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            ))->filterField($class::getFields(BaseModel::DETAIL))), true);
+        } 
+        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_paging") {
+            $class::getPublicCheck();
+            return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
+                return $data->filterField($data::getFields(BaseModel::PUBLIC));
+            }),$parameters["page"], $parameters["pageSize"], isset($parameters["search"])?$parameters["search"] : "", isset($parameters["sort"])?$parameters["sort"]:null)), true);
+        }
+        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_detail_all_paging") {
+            $class::getDetailCheck();
+            return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::DETAIL, array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            )), function($data) use($class){
+                return $data->filterField($data::getFields(BaseModel::DETAIL));
+            }), $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null)), true);
         }
     }
 }
 
 
-function filterParameterByClass($parameters, $class, $mode = BaseModel::PUBLIC)
+function filterParameterByClass($parameters, $class)
 {
     $result = array();
     $parameters = stdClassToArray($parameters);
-    $classParameterList = $class::getFields($mode);
+    $classParameterList = array_merge($class::getRealFields(), array("ID"));
     foreach ($classParameterList as  $value) {
         if (array_key_exists($value, $parameters)) $result[$value] = $parameters[$value];
     }
@@ -321,13 +337,24 @@ function filter($array, $function){
     return $result;
 }
 
+function find($array, $function){
+    foreach($array as $key=> $data){
+        if($function($data, $key))
+            return $data;
+    }
+    return null;
+}
+
 function getCurrentUser($userClass){
     $user = Auth::getLoginUser($userClass);
     if($user == null)  return null;
     return $user;
  }
 
- function paging($dataList,$page, $pageSize, $search = "", $sort){
+ function paging($dataList,$page, $pageSize, $search = "", $sort = array(
+     "prop"=> "ID",
+     "order"=> "descending",
+ )){
     $totalRow = 0;
     if($search != "" && $search != null)
     $dataList = filter($dataList, function($data, $index) use($page, $pageSize, $search){
@@ -364,4 +391,15 @@ function getCurrentUser($userClass){
        return $dataList;
     }
    return $dataList;
+ }
+
+ function array_unique_stdClass($array){
+    return array_map('json_decode', array_unique(array_map('json_encode', $array)));
+ }
+
+ function search($dataList, $search, $limit){
+    return filter($dataList, function($data, $index) use($search, $limit){
+        if($index >= $limit) return false;
+        return checkSearch($search, $data);
+    });
  }

@@ -9,28 +9,17 @@ abstract class DB{
     {
         return self::$_conn->rawQuery($sql);
     }
-    static function insertLog($action, $value = "")
-    {
-        $value = json_encode($value);
-        if(strlen( $value) > 60000)
-            $value = substr($value, 0,60000) . '...';
-        $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
-        unset($data['ID']);
-        $id = self::$_conn->insert('Log', convertParametersToString($data));
-        if ($id == false) throw new Exception(self::$_conn->getLastError());
-    }
     static function getRaw($class, $cols = null)
     {
         self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
         $result = self::$_conn->get($class::getSelfName(), null, $cols);
         if(method_exists($class, "permissionGetHandling"))
             $result = $class::permissionGetHandling($result);
-        // self::insertLog("GET", $result);
         return $result;
     }
-    static function getAll($class, $mode = BaseModel::PUBLIC)
+    static function getAll($class, $mode = BaseModel::PUBLIC, $options = null)
     {
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
         return $modelList;
     }
 
@@ -49,46 +38,36 @@ abstract class DB{
         }
         return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
     }
-    
-    // static function getLoginUser($userClass){
-    //     try{
-    //         if(getRequestToken() == "" || getRequestToken() == null)
-    //             return null;
-    //         $userID = self::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
-    //         self::$_conn->where("ID", $userID);
-    //         self::$_conn->where($userClass::getSelfName() . "." .'isDeleted', 0);
-    //         $result = self::$_conn->get($userClass::getSelfName(), null, null);
-    //         if(method_exists($userClass, "loginCheckingHandling"))
-    //             $result = $userClass::loginCheckingHandling($result);
-    //     return new $userClass($result[0], BaseModel::SYSTEM);
-    //     }catch(Exception $e){
-    //         throw $e;
-    //         return null;
-    //     }
-    // }
 
-    static function getByID($class, $ID, $model = BaseModel::PUBLIC)
+    static function getByID($class, $ID, $model = BaseModel::PUBLIC, $options = null)
     {
         self::$_conn->where("ID", $ID);
         $result = self::getRaw($class::getSelfName());
-        return (sizeof($result) > 0) ? new $class($result[0], $model) : null;
+        return (sizeof($result) > 0) ? new $class($result[0], $model, $options) : null;
     }
 
-    static function getByWhereCondition($class, $whereConditionList, $mode = BaseModel::PUBLIC)
+    static function getByWhereCondition($class, $whereConditionList, $mode = BaseModel::PUBLIC, $options = null)
     {
         self::addWhereConditionList($whereConditionList);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
         return $modelList;
     }
 
-    static function getByColumn($class, $column, $value, $mode = BaseModel::PUBLIC)
+    static function getByColumn($class, $column, $value, $mode = BaseModel::PUBLIC, $options = null)
     {
+        $options = isset($options) ? $options : array();
         self::$_conn->where($column, $value);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
         return $modelList;
     }
 
     static function deleteByWhereCondition($class, $whereConditionList)
+    {
+        self::addWhereConditionList($whereConditionList);
+        self::$_conn->delete($class::getSelfName());
+    }
+
+    static function deleteRealByWhereCondition($class, $whereConditionList)
     {
         self::addWhereConditionList($whereConditionList);
         self::$_conn->delete($class::getSelfName());
@@ -100,13 +79,12 @@ abstract class DB{
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
-        $result = self::$_conn->update($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
+        $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
-        // self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     }
-    static function update($parameters, $class,$mode = BaseModel::PUBLIC)
+    static function update($parameters, $class)
     {
-        $parameters = filterParameterByClass($parameters, $class, $mode);
+        $parameters = filterParameterByClass($parameters, $class);
         self::updateRaw($parameters, $class);
     }
     static function delete($ID, $class){
@@ -119,8 +97,8 @@ abstract class DB{
             throw new Exception("Delete Error");
     }
 
-    static function insert($parameters, $class, $mode = BaseModel::PUBLIC){
-        $parameters = filterParameterByClass($parameters, $class, $mode);
+    static function insert($parameters, $class){
+        $parameters = filterParameterByClass($parameters, $class);
         return self::insertRaw($parameters, $class);
     }
     static function isWhereConditionExisted($class, $whereConditionList){
@@ -133,7 +111,6 @@ abstract class DB{
             throw new Exception("Role Permission Denied");
         $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
-        // self::insertLog("INSERT", $parameters);
         return $id;
     }
 
@@ -196,11 +173,11 @@ function convertParametersToString($parameters)
     return $result;
 }
 
-function rawDataListTModelList($rawDataList, $class, $mode)
+function rawDataListTModelList($rawDataList, $class, $mode, $options)
 {
     $modelList = array();
     foreach ($rawDataList as $data) {
-        array_push($modelList,  new $class($data, $mode));
+        array_push($modelList,  new $class($data, $mode, $options));
     }
     return $modelList;
 }

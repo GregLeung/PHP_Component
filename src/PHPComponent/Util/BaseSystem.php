@@ -21,6 +21,7 @@
                 $this->response = generateBaseURL($this->classList, $this->parameters);
                 $this->response = $function($this->config, $this->parameters, $this->response);
                 $this->loginAPI();
+                $this->extraAPI();
                 if ($this->response == null) throw new Exception("URL Not Found");
             }catch (BaseException $e) {
                 DB::rollback();
@@ -49,6 +50,20 @@
                     if (!isExistedNotNull($this->parameters, "token")) throw new Exception('Token does not existed');
                     logOutRemoveToken($this->parameters['token']);
                     $this->response = new Response(200, "Success", "");
+                    break;
+            }
+        }
+        private function extraAPI(){
+            switch ($this->parameters["ACTION"]) {
+                case "upload_file":
+                    $file = $_FILES["file"];
+                    if ($file['size'] / 1024 / 1024 > 10) throw new Exception("File Size too large");
+                    $now = DateTime::createFromFormat('U.u', microtime(true));
+                    $fileName = $now->format("m_d_Y_H_i_s.u") . "_" .  rand(1,999) . "_" .  $_FILES["file"]["name"];
+                    if (move_uploaded_file($_FILES["file"]["tmp_name"],  SITE_ROOT . '/static/img/' . $fileName))
+                        $response = new Response(200, "Success", $fileName);
+                    else
+                        throw new Exception("Create File Error");
                     break;
             }
         }
