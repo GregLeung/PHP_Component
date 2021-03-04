@@ -234,9 +234,25 @@ function generateBaseURL($arrayOfModel, $parameters)
         } 
         else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_paging") {
             $class::getPublicCheck();
-            return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
-                return $data->filterField($data::getFields(BaseModel::PUBLIC));
-            }),$parameters["page"], $parameters["pageSize"], isset($parameters["search"])?$parameters["search"] : "", isset($parameters["sort"])?$parameters["sort"]:null)), true);
+            if(!isset($parameters["filter"])) $parameters["filter"] = null;
+            if(!isset($parameters["type"])) $parameters["type"] = BaseModel::PUBLIC;
+            $dataList = DB::getAll($class, $parameters["type"], array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            ));
+            if($parameters["filter"] != null)
+                $dataList = filter($dataList, function($data, $key) use($parameters){
+                    foreach($parameters["filter"] as $filterKey => $filterValue){
+                        if($data->$filterKey == $filterValue){
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            $dataList = map($dataList, function($data) use ($class, $parameters){
+                return $data->filterField($data::getFields($parameters["type"]));
+            });
+            $dataList = paging($dataList, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
+            return new Response(200, "Success", array($class::getSelfName() => $dataList));
         }
         else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_detail_all_paging") {
             $class::getDetailCheck();
@@ -383,10 +399,10 @@ function getCurrentUser($userClass){
  
  function sortPaging($dataList, $sortProp, $sortOrder){
     try{
-       if($sortOrder == "ascending")
-          usort($dataList, function ($a, $b) use($sortProp){ return $a[$sortProp] <=> $b[$sortProp];});
-       else
-          usort($dataList, function ($a, $b) use($sortProp){ return $b[$sortProp] <=> $a[$sortProp];});
+        if($sortOrder == "ascending")
+            usort($dataList, function ($a, $b) use($sortProp){ return ($a < $b) ? -1 : 1;});
+        else
+            usort($dataList, function ($a, $b) use($sortProp){ return ($b < $a) ? -1 : 1;});
     }catch(Exception $e){
        return $dataList;
     }
@@ -400,6 +416,7 @@ function getCurrentUser($userClass){
  function search($dataList, $search, $limit){
     return filter($dataList, function($data, $index) use($search, $limit){
         if($index >= $limit) return false;
+        if($search === null) return true;
         return checkSearch($search, $data);
     });
  }
