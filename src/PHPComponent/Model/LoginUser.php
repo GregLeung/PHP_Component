@@ -1,6 +1,5 @@
 <?php
 abstract class LoginUser extends BaseModel{
-    public $username;
     public $password;
     public $loginName; 
     public $type; 
@@ -21,7 +20,6 @@ abstract class LoginUser extends BaseModel{
     }
     public static function getPublicField(){
         return array(
-            array("key" => "username", "type"=> BaseTypeEnum::STRING),
             array("key" => "loginName", "type"=> BaseTypeEnum::STRING),
             array("key" => "type", "type"=> BaseTypeEnum::ARRAY),
         );

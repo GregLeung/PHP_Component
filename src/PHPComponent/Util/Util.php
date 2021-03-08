@@ -420,3 +420,40 @@ function getCurrentUser($userClass){
         return checkSearch($search, $data);
     });
  }
+
+ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText){
+    $searchList = array_unique(preg_split('/\s+/', strtolower($searchText)));
+    $result = array();
+    foreach($dataList as $key => $data){
+       $data = stdClassToArray($data);
+       $name = "";
+       foreach($nameFieldList as $nameField){
+          $name .= " " . $data[$nameField];
+       }
+       $nameList = array_unique(preg_split('/\s+/', strtolower($name)));
+       $count = 0;
+       $isAddToResult = false;
+       foreach($nameList as $name){
+          $percentage = 0;
+          foreach($searchList as $searchText){
+              $tempPercentage = 0;
+              similar_text($name, $searchText, $tempPercentage);
+              if($percentage < $tempPercentage) $percentage = $tempPercentage;
+          }
+          if($percentage > $percentageThreshold){
+              $count +=1;
+              $isAddToResult = true;
+          } 
+       }
+       $data["rating"] = $count/sizeof($nameList);
+       $data["count"] = $count;
+       if($isAddToResult)
+             array_push($result, $data);
+    }
+    usort($result, function ($a, $b) { 
+       if($a["rating"] === $b["rating"])
+           return ($a["count"] > $b["count"]) ? -1 : 1; 
+       return ($a["rating"] > $b["rating"]) ? -1 : 1;
+   });
+   return $result;
+ }
