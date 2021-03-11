@@ -61,7 +61,7 @@
                     $now = DateTime::createFromFormat('U.u', microtime(true));
                     $fileName = $now->format("m_d_Y_H_i_s.u") . "_" .  rand(1,999) . "_" .  $_FILES["file"]["name"];
                     if (move_uploaded_file($_FILES["file"]["tmp_name"],  SITE_ROOT . '/static/img/' . $fileName))
-                        $response = new Response(200, "Success", $fileName);
+                        $this->response = new Response(200, "Success", $fileName);
                     else
                         throw new Exception("Create File Error");
                     break;
