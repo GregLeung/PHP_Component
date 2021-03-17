@@ -211,29 +211,24 @@ function generateBaseURL($arrayOfModel, $parameters)
 {
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all") {
-            $class::getPublicCheck();
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
                 return $data->filterField($data::getFields(BaseModel::PUBLIC));
             })), true);
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            $class::getPublicCheck();
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)->filterField($class::getFields(BaseModel::PUBLIC))), true);
         } 
-        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") {
-            $class::getDetailCheck();
+        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") { // will be deprecated
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
                 return $data->filterField($class::getFields(BaseModel::DETAIL));
             })), true);
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') {
+        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') { // will be deprecated
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            $class::getDetailCheck();
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ))->filterField($class::getFields(BaseModel::DETAIL))), true);
         } 
         else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_paging") {
-            $class::getPublicCheck();
             if(!isset($parameters["filter"])) $parameters["filter"] = null;
             if(!isset($parameters["type"])) $parameters["type"] = BaseModel::PUBLIC;
             $dataList = DB::getAll($class, $parameters["type"], array(
@@ -254,13 +249,25 @@ function generateBaseURL($arrayOfModel, $parameters)
             $dataList = paging($dataList, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
             return new Response(200, "Success", array($class::getSelfName() => $dataList));
         }
-        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_detail_all_paging") {
-            $class::getDetailCheck();
+        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_detail_all_paging") { // will be deprecated
             return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::DETAIL, array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             )), function($data) use($class){
                 return $data->filterField($data::getFields(BaseModel::DETAIL));
             }), $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null)), true);
+        }else if($parameters["ACTION"] === "update_" . $class::getSelfName()){
+            if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
+            $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
+            $instance->update($parameters);
+            return new Response(200, "Success", array());
+        }else if($parameters["ACTION"] === "insert_" . $class::getSelfName()){
+            $class::insert($parameters);
+            return new Response(200, "Success", array());
+        }else if($parameters["ACTION"] === "delete_" . $class::getSelfName()){
+            if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
+            $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
+            $instance->delete($parameters);
+            return new Response(200, "Success", array());
         }
     }
 }

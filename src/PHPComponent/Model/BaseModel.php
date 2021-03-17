@@ -22,11 +22,10 @@ abstract class BaseModel
         );
     }
 
-    static function getPublicCheck(){}
     static function getPublicField(){
         return array();
     }
-    static function getDetailCheck(){}
+    
     static function getDetailField(){
         return array();
     }
