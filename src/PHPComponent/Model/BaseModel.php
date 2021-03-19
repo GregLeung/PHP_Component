@@ -68,8 +68,12 @@ abstract class BaseModel
                     $this->$key = (isJSONString($object[$data['key']]))?json_decode($object[$data['key']]):array();
                 break;
                 case BaseTypeEnum::TO_MULTI:
-                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))
+                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])){
+                        $options["joinClass"] = filter($options["joinClass"], function($value) use($data){
+                            return $value !== $data["class"];
+                        });
                         $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID, BaseModel::SYSTEM, $options);
+                    }
                 break;
                 case BaseTypeEnum::TO_SINGLE:
                     if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))

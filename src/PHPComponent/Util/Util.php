@@ -216,7 +216,9 @@ function generateBaseURL($arrayOfModel, $parameters)
             })), true);
         } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::PUBLIC)->filterField($class::getFields(BaseModel::PUBLIC))), true);
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            ))->filterField($class::getFields(BaseModel::DETAIL))), true);
         } 
         else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") { // will be deprecated
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
@@ -268,6 +270,9 @@ function generateBaseURL($arrayOfModel, $parameters)
             $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
             $instance->delete($parameters);
             return new Response(200, "Success", array());
+        }else if($parameters["ACTION"] === "search_" . $class::getSelfName()){
+            $dataList = DB::getAll($class, BaseModel::DETAIL);
+            return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
         }
     }
 }
