@@ -257,15 +257,15 @@ function generateBaseURL($arrayOfModel, $parameters)
             )), function($data) use($class){
                 return $data->filterField($data::getFields(BaseModel::DETAIL));
             }), $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null)), true);
-        }else if($parameters["ACTION"] === "update_" . $class::getSelfName()){
+        }else if($parameters["ACTION"] === "default_update_" . $class::getSelfName()){
             if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
             $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
             $instance->update($parameters);
             return new Response(200, "Success", array());
-        }else if($parameters["ACTION"] === "insert_" . $class::getSelfName()){
+        }else if($parameters["ACTION"] === "default_insert_" . $class::getSelfName()){
             $class::insert($parameters);
             return new Response(200, "Success", array());
-        }else if($parameters["ACTION"] === "delete_" . $class::getSelfName()){
+        }else if($parameters["ACTION"] === "default_delete_" . $class::getSelfName()){
             if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
             $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
             $instance->delete($parameters);
