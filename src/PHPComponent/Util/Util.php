@@ -271,7 +271,9 @@ function generateBaseURL($arrayOfModel, $parameters)
             $instance->delete($parameters);
             return new Response(200, "Success", array());
         }else if($parameters["ACTION"] === "search_" . $class::getSelfName()){
-            $dataList = DB::getAll($class, BaseModel::DETAIL);
+            $dataList = DB::getAll($class, BaseModel::DETAIL, array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            ));
             return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
         }
     }
