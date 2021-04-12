@@ -58,7 +58,7 @@ abstract class BaseModel
                     $this->$key = $object[$data['key']];
                 break;
                 case BaseTypeEnum::NUMBER:
-                    if(($object[$data['key']] == null)) $this->$key = null;
+                    if(($object[$data['key']] === null)) $this->$key = null;
                     else $this->$key = ($object[$data['key']] == (int) $object[$data['key']]) ? (int) $object[$data['key']] : (float) $object[$data['key']];
                 break;
                 case BaseTypeEnum::ARRAY:

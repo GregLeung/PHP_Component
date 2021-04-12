@@ -16,6 +16,7 @@
         }
 
         public function ready($function){
+            DB::startTransaction();
             try{
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
                 $this->response = generateBaseURL($this->classList, $this->parameters);
@@ -23,6 +24,7 @@
                 $this->loginAPI();
                 $this->extraAPI();
                 if ($this->response == null) throw new Exception("URL Not Found");
+                DB::commit();
             }catch (BaseException $e) {
                 DB::rollback();
                 $this->response = new Response($e->code, $e->type, $e->getMessage());

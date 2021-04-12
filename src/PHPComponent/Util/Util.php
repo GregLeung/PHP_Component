@@ -188,7 +188,7 @@ function parseValue($parameters)
     $result = array();
     foreach ($parameters as $key => $value) {
         if (is_array($value)) {
-            $result[$key] = parseValue($value);
+            $result[$key] = $value;
         } else if (isJSONString($value)) {
             $value = json_decode($value, true);
             $result[$key] = parseValue($value);
@@ -210,27 +210,41 @@ function parseValue($parameters)
 function generateBaseURL($arrayOfModel, $parameters)
 {
     foreach ($arrayOfModel as $key => $class) {
-        if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all") {
-            return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::PUBLIC), function($data) use($class){
-                return $data->filterField($data::getFields(BaseModel::PUBLIC));
-            })), true);
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName()) {
+        if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all") {
+            $result = DB::getAll($class, BaseModel::DETAIL, array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            ));
+            if(isset($parameters["whereCondition"]))
+                $result = filter($result, function($data, $key) use($parameters){
+                    foreach($parameters["whereCondition"] as $whereCondition){
+                        foreach ($whereCondition as $key => $value){
+                            if($data->$key === $value)
+                                return true;
+                        }
+                    }
+                    return false;
+                });
+            $result = map($result, function($data) use($class){
+                return $data->filterField($data::getFields(BaseModel::DETAIL));
+            });
+            return new Response(200, "Success", array($class::getSelfName() => $result), true);
+        } else if ($parameters["ACTION"] === "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ))->filterField($class::getFields(BaseModel::DETAIL))), true);
         } 
-        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_detail") { // will be deprecated
+        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all_detail") { // will be deprecated
             return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
                 return $data->filterField($class::getFields(BaseModel::DETAIL));
             })), true);
-        } else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . '_detail') { // will be deprecated
+        } else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . '_detail') { // will be deprecated
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ))->filterField($class::getFields(BaseModel::DETAIL))), true);
         } 
-        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_all_paging") {
+        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all_paging") {
             if(!isset($parameters["filter"])) $parameters["filter"] = null;
             if(!isset($parameters["type"])) $parameters["type"] = BaseModel::PUBLIC;
             $dataList = DB::getAll($class, $parameters["type"], array(
@@ -251,7 +265,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             $dataList = paging($dataList, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
             return new Response(200, "Success", array($class::getSelfName() => $dataList));
         }
-        else if ($parameters["ACTION"] == "get_" . $class::getSelfName() . "_detail_all_paging") { // will be deprecated
+        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_detail_all_paging") { // will be deprecated
             return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::DETAIL, array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             )), function($data) use($class){

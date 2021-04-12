@@ -73,6 +73,9 @@ abstract class DB{
         self::$_conn->delete($class::getSelfName());
     }
     private static function updateRaw($parameters, $class){
+        unset($parameters['createdDate']);
+        unset($parameters['modifiedDate']);
+        unset($parameters['isDeleted']);
         if(method_exists($class, "permissionUpdateHandling") && !$class::permissionUpdateHandling($parameters, self::getByID($class, $parameters["ID"], BaseModel::SYSTEM)))
             throw new Exception("Role Permission Denied");
         $parameters = (array) $parameters;
@@ -107,6 +110,9 @@ abstract class DB{
 
     private static function insertRaw($parameters, $class){
         unset($parameters['ID']);
+        unset($parameters['createdDate']);
+        unset($parameters['modifiedDate']);
+        unset($parameters['isDeleted']);
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
         $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
@@ -131,7 +137,11 @@ abstract class DB{
 
     private static function addWhereConditionList($whereConditionList){
         foreach ($whereConditionList as $key => $value) {
-            self::$_conn->where($key, $value);
+            if($value === null){
+                self::$_conn->where($key, NULL, '<=>');
+            }else{
+                self::$_conn->where($key, $value);
+            }
         }
     }
 }
