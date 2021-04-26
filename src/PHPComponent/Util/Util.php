@@ -211,7 +211,7 @@ function generateBaseURL($arrayOfModel, $parameters)
 {
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all") {
-            $result = DB::getAll($class, BaseModel::DETAIL, array(
+            $result = DB::getAll($class,  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
             if(isset($parameters["whereCondition"]))
@@ -225,55 +225,19 @@ function generateBaseURL($arrayOfModel, $parameters)
                     return false;
                 });
             $result = map($result, function($data) use($class){
-                return $data->filterField($data::getFields(BaseModel::DETAIL));
+                return $data;
             });
+            if(isset($parameters["paging"])) $result = $dataList = paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
             return new Response(200, "Success", array($class::getSelfName() => $result), true);
         } else if ($parameters["ACTION"] === "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"],  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
-            ))->filterField($class::getFields(BaseModel::DETAIL))), true);
+            ))), true);
         } 
-        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all_detail") { // will be deprecated
-            return new Response(200, "Success", array($class::getSelfName() => map(DB::getAll($class, BaseModel::DETAIL), function($data) use($class){
-                return $data->filterField($class::getFields(BaseModel::DETAIL));
-            })), true);
-        } else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . '_detail') { // will be deprecated
-            if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
-            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
-                "joinClass" => ["EventSource"]
-            ))->filterField($class::getFields(BaseModel::DETAIL))), true);
-        } 
-        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all_paging") {
-            if(!isset($parameters["filter"])) $parameters["filter"] = null;
-            if(!isset($parameters["type"])) $parameters["type"] = BaseModel::PUBLIC;
-            $dataList = DB::getAll($class, $parameters["type"], array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
-            ));
-            if($parameters["filter"] != null)
-                $dataList = filter($dataList, function($data, $key) use($parameters){
-                    foreach($parameters["filter"] as $filterKey => $filterValue){
-                        if($data->$filterKey == $filterValue){
-                            return true;
-                        }
-                    }
-                    return false;
-                });
-            $dataList = map($dataList, function($data) use ($class, $parameters){
-                return $data->filterField($data::getFields($parameters["type"]));
-            });
-            $dataList = paging($dataList, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
-            return new Response(200, "Success", array($class::getSelfName() => $dataList));
-        }
-        else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_detail_all_paging") { // will be deprecated
-            return new Response(200, "Success", array($class::getSelfName() => paging(map(DB::getAll($class, BaseModel::DETAIL, array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
-            )), function($data) use($class){
-                return $data->filterField($data::getFields(BaseModel::DETAIL));
-            }), $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null)), true);
-        }else if($parameters["ACTION"] === "default_update_" . $class::getSelfName()){
+        else if($parameters["ACTION"] === "default_update_" . $class::getSelfName()){
             if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
-            $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
+            $instance = DB::getByID($class::getSelfName(), $parameters["ID"]);
             $instance->update($parameters);
             return new Response(200, "Success", array());
         }else if($parameters["ACTION"] === "default_insert_" . $class::getSelfName()){
@@ -281,11 +245,11 @@ function generateBaseURL($arrayOfModel, $parameters)
             return new Response(200, "Success", array());
         }else if($parameters["ACTION"] === "default_delete_" . $class::getSelfName()){
             if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
-            $instance = DB::getByID($class::getSelfName(), $parameters["ID"], BaseModel::DETAIL);
+            $instance = DB::getByID($class::getSelfName(), $parameters["ID"]);
             $instance->delete($parameters);
             return new Response(200, "Success", array());
         }else if($parameters["ACTION"] === "search_" . $class::getSelfName()){
-            $dataList = DB::getAll($class, BaseModel::DETAIL, array(
+            $dataList = DB::getAll($class,  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
             return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
@@ -298,7 +262,7 @@ function filterParameterByClass($parameters, $class)
 {
     $result = array();
     $parameters = stdClassToArray($parameters);
-    $classParameterList = array_merge($class::getRealFields(), array("ID"));
+    $classParameterList = array_merge(map($class::getRealFields(), function($data, $key){return $data["key"];}), array("ID"));
     foreach ($classParameterList as  $value) {
         if (array_key_exists($value, $parameters)) $result[$value] = $parameters[$value];
     }

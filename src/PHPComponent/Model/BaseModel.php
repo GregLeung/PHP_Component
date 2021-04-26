@@ -1,9 +1,6 @@
 <?php
 abstract class BaseModel
 {
-    const PUBLIC = 0;
-    const DETAIL = 1;
-    const SYSTEM = 2;
     public $createdDate;
     public $modifiedDate;
     public $ID;
@@ -13,7 +10,7 @@ abstract class BaseModel
         return (DB::getByID(static::class, $id) != null);
     }
 
-    static function getSystemField(){
+    static function getSystemFields(){
         return array(
             array("key" => "createdDate", "type"=> BaseTypeEnum::STRING),
             array("key" => "modifiedDate", "type"=> BaseTypeEnum::STRING),
@@ -22,36 +19,27 @@ abstract class BaseModel
         );
     }
 
-    static function getPublicField(){
+    static function getFields(){
         return array();
     }
 
-    static function getVirtualField(){
-        return array();
-    }
-    
-    static function getDetailField(){
-        return array();
+    static function getRealFields(){
+        return filter(static::getFields(), function($data, $key){
+            return $data["type"] !== BaseTypeEnum::TO_MULTI && $data["type"] !== BaseTypeEnum::TO_SINGLE;
+        });
     }
 
-    public function filterField($fieldList){
-        $result = array();
-        foreach (stdClassToArray($this) as $classKey => $classValue) {
-            foreach($fieldList as $key => $value){
-                if($classKey == $value){
-                    $result[$classKey] = $classValue;
-                    break;
-                }
-            }
-        }
+    static function getFieldsWithType(){
+        $result = array(array("key" => "ID", "type"=> BaseTypeEnum::NUMBER),);
+        $result = array_merge(array_map(function ($data) { return $data; }, self::getSystemFields()), $result);
+        $result = array_merge(array_map(function ($data) { return $data; }, self::getFields()), $result);
         return $result;
     }
 
-    public function __construct($object, $mode = BaseModel::PUBLIC, $options = array()){
+    public function __construct($object,  $options = array()){
         $this->ID = $object["ID"];
-        if($mode === BaseModel::SYSTEM){
-            $this->assignField($object, self::getSystemField(), $options);
-        }
+        $this->assignField($object, self::getSystemFields(), $options);
+        $this->assignField($object, static::getFields(), $options);
     }
 
     protected function assignField($object, $fieldArray, $options = array()){
@@ -76,63 +64,18 @@ abstract class BaseModel
                         $options["joinClass"] = filter($options["joinClass"], function($value) use($data){
                             return $value !== $data["class"];
                         });
-                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID, BaseModel::SYSTEM, $options);
+                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  $options);
                     }
                 break;
                 case BaseTypeEnum::TO_SINGLE:
                     if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))
-                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]}, BaseModel::SYSTEM, $options);
+                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  $options);
                 break;
                 case BaseTypeEnum::Boolean:
                     $this->$key = ($object[$data['key']] === 1) ? true : false ;
                 break;
             }
         }
-    }
-
-    protected function init($object, $publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC, $options = array()){
-        switch ($mode) {
-            case BaseModel::SYSTEM:
-                $this->assignField($object, $systemField, $options); 
-            case BaseModel::DETAIL:
-                $this->assignField($object, $detailField, $options);
-            case BaseModel::PUBLIC:
-                $this->assignField($object, $publicField, $options);
-        }
-    }
-
-    protected static function initGetFields($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array("ID");
-        switch ($mode) {
-            case BaseModel::SYSTEM:
-                $result = array_merge(array_map(function ($data) { return $data['key']; }, $systemField), $result);
-            case BaseModel::DETAIL:
-                $result = array_merge(array_map(function ($data) { return $data['key']; }, $detailField), $result);
-            case BaseModel::PUBLIC:
-                $result = array_merge(array_map(function ($data) { return $data['key']; }, $publicField), $result);
-        }
-        return $result;
-    }
-
-    protected static function initGetFieldsWithType($publicField, $detailField, $systemField, $mode = BaseModel::PUBLIC){
-        $result = array(array("key" => "ID", "type"=> BaseTypeEnum::STRING),);
-        switch ($mode) {
-            case BaseModel::SYSTEM:
-                $result = array_merge(array_map(function ($data) { return $data; }, $systemField), $result);
-            case BaseModel::DETAIL:
-                $result = array_merge(array_map(function ($data) { return $data; }, $detailField), $result);
-            case BaseModel::PUBLIC:
-                $result = array_merge(array_map(function ($data) { return $data; }, $publicField), $result);
-        }
-        return $result;
-    }
-
-    public static function getRealFields(){
-        return map(filter(array_merge(static::getPublicField(), static::getDetailField(), static::getSystemField()), function($data, $key){
-            return !($data["type"] === BaseTypeEnum::TO_MULTI || $data["type"] === BaseTypeEnum::TO_SINGLE);
-        }), function($data, $key){
-            return $data["key"];
-        });
     }
 
     public static function getSelfName(){

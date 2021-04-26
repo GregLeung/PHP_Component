@@ -13,22 +13,11 @@ abstract class LoginUser extends BaseModel{
         }
     }
 
-    public static function getDetailField(){
-        return array(
-            array("key" => "password", "type"=> BaseTypeEnum::STRING),
-        );
-    }
-    public static function getPublicField(){
+    public static function getFields(){
         return array(
             array("key" => "loginName", "type"=> BaseTypeEnum::STRING),
             array("key" => "type", "type"=> BaseTypeEnum::ARRAY),
+            array("key" => "password", "type"=> BaseTypeEnum::STRING),
         );
-    }
-    public static function getFields($mode = BaseModel::PUBLIC){
-        return self::initGetFields(self::getPublicField(), self::getDetailField(), self::getSystemField(), $mode);
-    }
-    public function __construct($object, $mode = BaseModel::PUBLIC){
-        parent::__construct($object);
-        $this->init($object, self::getPublicField(), self::getDetailField(), self::getSystemField(), $mode);
     }
 }

@@ -17,9 +17,9 @@ abstract class DB{
             $result = $class::permissionGetHandling($result);
         return $result;
     }
-    static function getAll($class, $mode = BaseModel::PUBLIC, $options = null)
+    static function getAll($class, $options = null)
     {
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class,  $options);
         return $modelList;
     }
 
@@ -29,35 +29,26 @@ abstract class DB{
         $count = self::getRaw($class::getSelfName(), "count(*)")[0]['count(*)'];
         return $count;
     }
-    static function join($db, $dbObjectList, $whereConditionList = array()){
-        self::addWhereConditionList($whereConditionList);
-        $field_query = "";
-        foreach ($dbObjectList as $dbObject) {
-            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
-            self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
-        }
-        return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
-    }
 
-    static function getByID($class, $ID, $model = BaseModel::PUBLIC, $options = null)
+    static function getByID($class, $ID, $options = null)
     {
         self::$_conn->where("ID", $ID);
         $result = self::getRaw($class::getSelfName());
-        return (sizeof($result) > 0) ? new $class($result[0], $model, $options) : null;
+        return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
     }
 
-    static function getByWhereCondition($class, $whereConditionList, $mode = BaseModel::PUBLIC, $options = null)
+    static function getByWhereCondition($class, $whereConditionList,  $options = null)
     {
         self::addWhereConditionList($whereConditionList);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $options);
         return $modelList;
     }
 
-    static function getByColumn($class, $column, $value, $mode = BaseModel::PUBLIC, $options = null)
+    static function getByColumn($class, $column, $value,  $options = null)
     {
         $options = isset($options) ? $options : array();
         self::$_conn->where($column, $value);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $mode, $options);
+        $modelList = rawDataListTModelList(self::getRaw($class), $class, $options);
         return $modelList;
     }
 
@@ -76,7 +67,7 @@ abstract class DB{
         unset($parameters['createdDate']);
         unset($parameters['modifiedDate']);
         unset($parameters['isDeleted']);
-        if(method_exists($class, "permissionUpdateHandling") && !$class::permissionUpdateHandling($parameters, self::getByID($class, $parameters["ID"], BaseModel::SYSTEM)))
+        if(method_exists($class, "permissionUpdateHandling") && !$class::permissionUpdateHandling($parameters, self::getByID($class, $parameters["ID"])))
             throw new Exception("Role Permission Denied");
         $parameters = (array) $parameters;
         self::$_conn->where("ID", $parameters["ID"]);
@@ -91,7 +82,7 @@ abstract class DB{
         self::updateRaw($parameters, $class);
     }
     static function delete($ID, $class){
-        self::update(array("ID"=>$ID, "isDeleted"=>1),$class, BaseModel::SYSTEM);
+        self::update(array("ID"=>$ID, "isDeleted"=>1),$class);
     }
 
     static function realDelete($ID, $class){
@@ -105,7 +96,7 @@ abstract class DB{
         return self::insertRaw($parameters, $class);
     }
     static function isWhereConditionExisted($class, $whereConditionList){
-        return sizeof(DB::getByWhereCondition($class, $whereConditionList, BaseModel::SYSTEM)) > 0;
+        return sizeof(DB::getByWhereCondition($class, $whereConditionList)) > 0;
     }
 
     private static function insertRaw($parameters, $class){
@@ -115,7 +106,7 @@ abstract class DB{
         unset($parameters['isDeleted']);
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
-        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType(BaseModel::SYSTEM))));
+        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType())));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         return $id;
     }
@@ -162,21 +153,6 @@ function addDefaultValue($parameters, $fieldTypeList){
     return $parameters;
 }
 
-function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
-{
-    $sql = "";
-    $fields = $class::getFields($mode);
-    foreach($class::getVirtualField() as $virtualField){
-        $fields = filter($fields, function($data, $key)use($virtualField){
-            return $data !== $virtualField["key"];
-        });
-    }
-    foreach ($fields as $value) {
-        $sql .=  $class::getSelfName() . "." . $value . " as '" . $class::getSelfName() . "." . $value . "', ";
-    }
-    return substr_replace($sql, " ", -2);
-}
-
 function convertParametersToString($parameters)
 {
     $result = array();
@@ -189,11 +165,11 @@ function convertParametersToString($parameters)
     return $result;
 }
 
-function rawDataListTModelList($rawDataList, $class, $mode, $options)
+function rawDataListTModelList($rawDataList, $class, $options)
 {
     $modelList = array();
     foreach ($rawDataList as $data) {
-        array_push($modelList,  new $class($data, $mode, $options));
+        array_push($modelList,  new $class($data, $options));
     }
     return $modelList;
 }

@@ -17,11 +17,11 @@ class Auth{
         // $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
         $token = DB::getByColumn(Token::class, 'token', getRequestToken())[0];
         $token->expiredDate = time() + 6048000;
-        DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), Token::class, BaseModel::SYSTEM);
+        DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), Token::class);
         DB::$_conn->where("ID", $token->userID);
         DB::$_conn->where($userClass::getSelfName() . "." . 'isDeleted', 0);
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);
-        return new $userClass($result[0], BaseModel::SYSTEM);
+        return new $userClass($result[0]);
     }
 
     static function login($userClass, $loginName, $password, $expiredTime = 6048000)
@@ -31,7 +31,7 @@ class Auth{
         DB::$_conn->where("password", $password);
         $result = DB::$_conn->get($userClass::getSelfName(), null, null);
         if (sizeof($result) == 0) throw new Exception('Please enter correct user name or password');
-        $user = new $userClass($result[0], BaseModel::SYSTEM);
+        $user = new $userClass($result[0]);
         $token = addToken($user, $expiredTime);
         return array("user" => $user, 'token' => $token);
     }
