@@ -188,11 +188,11 @@ function parseValue($parameters)
     $result = array();
     foreach ($parameters as $key => $value) {
         if (is_array($value)) {
-            $result[$key] = $value;
+            $result[$key] = parseValue($value);
         } else if (isJSONString($value)) {
             $value = json_decode($value, true);
             $result[$key] = parseValue($value);
-        } else if (is_string($value) && strlen($value > 0) && $value[0] == "[" && $value[strlen($value) - 1] == "]") {
+        } else if (is_string($value) && strlen($value) > 0 && $value[0] === "[" && $value[strlen($value) - 1] === "]") {
             $array = substr($value, 1);
             $array = substr($array, 0, -1);
             $value = explode(", ", $array);
@@ -241,7 +241,7 @@ function generateBaseURL($arrayOfModel, $parameters)
         } else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . '_detail') { // will be deprecated
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"], BaseModel::DETAIL, array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+                "joinClass" => ["EventSource"]
             ))->filterField($class::getFields(BaseModel::DETAIL))), true);
         } 
         else if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all_paging") {
