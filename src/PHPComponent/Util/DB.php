@@ -165,7 +165,13 @@ function addDefaultValue($parameters, $fieldTypeList){
 function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
 {
     $sql = "";
-    foreach ($class::getFields($mode) as $value) {
+    $fields = $class::getFields($mode);
+    foreach($class::getVirtualField() as $virtualField){
+        $fields = filter($fields, function($data, $key)use($virtualField){
+            return $data !== $virtualField["key"];
+        });
+    }
+    foreach ($fields as $value) {
         $sql .=  $class::getSelfName() . "." . $value . " as '" . $class::getSelfName() . "." . $value . "', ";
     }
     return substr_replace($sql, " ", -2);

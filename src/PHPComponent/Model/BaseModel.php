@@ -25,6 +25,10 @@ abstract class BaseModel
     static function getPublicField(){
         return array();
     }
+
+    static function getVirtualField(){
+        return array();
+    }
     
     static function getDetailField(){
         return array();
