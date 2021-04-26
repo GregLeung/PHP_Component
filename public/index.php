@@ -1,4 +1,4 @@
 <?php
     require_once '../vendor/autoload.php';
-    echo "Version 0.2.17-2";
+    echo "Version 0.2.17-deprecated";
     
