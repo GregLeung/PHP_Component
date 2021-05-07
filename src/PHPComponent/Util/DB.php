@@ -66,14 +66,14 @@ abstract class DB{
     private static function updateRaw($parameters, $class){
         unset($parameters['createdDate']);
         unset($parameters['modifiedDate']);
-        unset($parameters['isDeleted']);
+        // unset($parameters['isDeleted']);
         if(method_exists($class, "permissionUpdateHandling") && !$class::permissionUpdateHandling($parameters, self::getByID($class, $parameters["ID"])))
             throw new Exception("Role Permission Denied");
         $parameters = (array) $parameters;
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
-        $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters));
+        $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters, $class::getFieldsWithType()));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
     }
     static function update($parameters, $class)
@@ -82,7 +82,7 @@ abstract class DB{
         self::updateRaw($parameters, $class);
     }
     static function delete($ID, $class){
-        self::update(array("ID"=>$ID, "isDeleted"=>1),$class);
+        self::updateRaw(array("ID"=>$ID, "isDeleted"=>1),$class);
     }
 
     static function realDelete($ID, $class){
@@ -106,7 +106,8 @@ abstract class DB{
         unset($parameters['isDeleted']);
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
-        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $class::getFieldsWithType())));
+        $typeList =  $class::getFieldsWithType();
+        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $typeList), $typeList));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         return $id;
     }
@@ -139,7 +140,7 @@ abstract class DB{
 
 function addDefaultValue($parameters, $fieldTypeList){
     foreach($fieldTypeList as $field){
-        if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] == null){
+        if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] === null){
             switch($field["type"]){
                 case BaseTypeEnum::ARRAY:
                     $parameters[$field["key"]] = "[]";
@@ -153,11 +154,16 @@ function addDefaultValue($parameters, $fieldTypeList){
     return $parameters;
 }
 
-function convertParametersToString($parameters)
+function convertParametersToString($parameters, $typeList)
 {
     $result = array();
     foreach ($parameters as $key => $value) {
-        if (is_array($value))
+        if (is_array($value) && find($typeList, function($data)use($key){return $data["key"] === $key;})["type"] === BaseTypeEnum::INT_ARRAY){
+            $arrayValue = map($value, function($data){return intval($data);});
+            sort($arrayValue);
+            $result[$key] = json_encode($arrayValue);
+        }
+        else if (is_array($value))
             $result[$key] = json_encode($value);
         else
             $result[$key] = $value;

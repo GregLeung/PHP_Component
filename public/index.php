@@ -1,4 +1,4 @@
 <?php
     require_once '../vendor/autoload.php';
-    echo "Version 0.2.19";
+    echo "Version 0.2.20";
     

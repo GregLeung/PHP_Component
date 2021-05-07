@@ -168,7 +168,7 @@ function generateQRcode($path, $value)
 function getParameter($post, $get)
 {
     $input = file_get_contents('php://input');
-    (isJSONString($input)) ? $post = json_decode($input, true) : $post = array();
+    if(isJSONString($input)) $post = json_decode($input, true);
     $result = array();
     $parameter = array_merge($post, $get);
     $result = parseValue($parameter);
@@ -218,15 +218,12 @@ function generateBaseURL($arrayOfModel, $parameters)
                 $result = filter($result, function($data, $key) use($parameters){
                     foreach($parameters["whereCondition"] as $whereCondition){
                         foreach ($whereCondition as $key => $value){
-                            if($data->$key === $value)
+                            if($data->$key == $value)
                                 return true;
                         }
                     }
                     return false;
                 });
-            $result = map($result, function($data) use($class){
-                return $data;
-            });
             if(isset($parameters["paging"])) $result = $dataList = paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
             return new Response(200, "Success", array($class::getSelfName() => $result), true);
         } else if ($parameters["ACTION"] === "get_" . $class::getSelfName()) {
@@ -241,8 +238,8 @@ function generateBaseURL($arrayOfModel, $parameters)
             $instance->update($parameters);
             return new Response(200, "Success", array());
         }else if($parameters["ACTION"] === "default_insert_" . $class::getSelfName()){
-            $class::insert($parameters);
-            return new Response(200, "Success", array());
+            $id = $class::insert($parameters);
+            return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $id)));
         }else if($parameters["ACTION"] === "default_delete_" . $class::getSelfName()){
             if(!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
             $instance = DB::getByID($class::getSelfName(), $parameters["ID"]);
@@ -362,14 +359,17 @@ function getCurrentUser($userClass){
  function paging($dataList,$page, $pageSize, $search = "", $sort = array(
      "prop"=> "ID",
      "order"=> "descending",
- )){
+ ), $customSortFunction = null){
     $totalRow = 0;
     if($search != "" && $search != null)
     $dataList = filter($dataList, function($data, $index) use($page, $pageSize, $search){
        return (checkSearch($search, $data));
     });
     $totalRow = count($dataList);
-    $dataList = sortPaging($dataList, $sort["prop"], $sort["order"]);
+    if($customSortFunction == null) 
+        $dataList = sortPaging($dataList, $sort["prop"], $sort["order"]);
+    else
+         $dataList = $customSortFunction($dataList, $sort["prop"], $sort["order"]);
     $dataList = filter($dataList, function($data, $index) use($page, $pageSize, $search){
        return (checkPaging($index, $page, $pageSize));
     });
@@ -391,13 +391,13 @@ function getCurrentUser($userClass){
  
  function sortPaging($dataList, $sortProp, $sortOrder){
     try{
-        if($sortOrder == "ascending")
-            usort($dataList, function ($a, $b) use($sortProp){ return ($a < $b) ? -1 : 1;});
-        else
-            usort($dataList, function ($a, $b) use($sortProp){ return ($b < $a) ? -1 : 1;});
+        usort($dataList, function ($a, $b) use($sortProp, $sortOrder){ 
+            return ($sortOrder === "ascending") ? ($a->$sortProp < $b->$sortProp): ($a->$sortProp > $b->$sortProp);
+        });
     }catch(Exception $e){
        return $dataList;
     }
+    
    return $dataList;
  }
 

@@ -15,7 +15,7 @@ abstract class BaseModel
             array("key" => "createdDate", "type"=> BaseTypeEnum::STRING),
             array("key" => "modifiedDate", "type"=> BaseTypeEnum::STRING),
             array("key" => "isDeleted", "type"=> BaseTypeEnum::STRING),
-            array("key" => "ID", "type"=> BaseTypeEnum::STRING)
+            array("key" => "ID", "type"=> BaseTypeEnum::NUMBER)
         );
     }
 
@@ -31,8 +31,8 @@ abstract class BaseModel
 
     static function getFieldsWithType(){
         $result = array(array("key" => "ID", "type"=> BaseTypeEnum::NUMBER),);
-        $result = array_merge(array_map(function ($data) { return $data; }, self::getSystemFields()), $result);
-        $result = array_merge(array_map(function ($data) { return $data; }, self::getFields()), $result);
+        $result = array_merge(array_map(function ($data) { return $data; }, static::getSystemFields()), $result);
+        $result = array_merge(array_map(function ($data) { return $data; }, static::getFields()), $result);
         return $result;
     }
 
@@ -74,6 +74,11 @@ abstract class BaseModel
                 case BaseTypeEnum::Boolean:
                     $this->$key = ($object[$data['key']] === 1) ? true : false ;
                 break;
+                case BaseTypeEnum::INT_ARRAY:
+                    $this->$key = filter(json_decode($object[$data['key']]), function($data, $key){
+                        return intval($data);
+                    });
+                break;
             }
         }
     }
@@ -94,4 +99,5 @@ class BaseTypeEnum{
     const TO_SINGLE = 4;
     const NUMBER = 5;
     const Boolean = 6;
+    const INT_ARRAY = 7;
 }
