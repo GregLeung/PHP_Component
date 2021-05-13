@@ -392,7 +392,7 @@ function getCurrentUser($userClass){
  function sortPaging($dataList, $sortProp, $sortOrder){
     try{
         usort($dataList, function ($a, $b) use($sortProp, $sortOrder){ 
-            return ($sortOrder === "ascending") ? ($a->$sortProp < $b->$sortProp): ($a->$sortProp > $b->$sortProp);
+            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp): ($a->$sortProp < $b->$sortProp);
         });
     }catch(Exception $e){
        return $dataList;

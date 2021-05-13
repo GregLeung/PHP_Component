@@ -1,6 +1,6 @@
 <?php
 abstract class BaseModel
-{
+{   
     public $createdDate;
     public $modifiedDate;
     public $ID;
@@ -79,6 +79,17 @@ abstract class BaseModel
                         return intval($data);
                     });
                 break;
+                case BaseTypeEnum::ARRAY_OF_ID:
+                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])){
+                        $options["joinClass"] = filter($options["joinClass"], function($value) use($data){
+                            return $value !== $data["class"];
+                        });
+                        $this->$key = array();
+                        foreach($this->{$data["field"]} as $id){
+                            array_push($this->$key, DB::getByID($data["class"], $id,  $options));
+                        }
+                    }
+                break;
             }
         }
     }
@@ -100,4 +111,5 @@ class BaseTypeEnum{
     const NUMBER = 5;
     const Boolean = 6;
     const INT_ARRAY = 7;
+    const ARRAY_OF_ID = 8;
 }
