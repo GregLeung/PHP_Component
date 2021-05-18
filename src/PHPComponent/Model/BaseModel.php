@@ -1,6 +1,6 @@
 <?php
 abstract class BaseModel
-{   
+{
     public $createdDate;
     public $modifiedDate;
     public $ID;
@@ -68,8 +68,12 @@ abstract class BaseModel
                     }
                 break;
                 case BaseTypeEnum::TO_SINGLE:
-                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"]))
+                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])){
+                        $options["joinClass"] = filter($options["joinClass"], function($value) use($data){
+                            return $value !== $data["class"];
+                        });
                         $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  $options);
+                    }
                 break;
                 case BaseTypeEnum::Boolean:
                     $this->$key = ($object[$data['key']] === 1) ? true : false ;
@@ -78,17 +82,6 @@ abstract class BaseModel
                     $this->$key = filter(json_decode($object[$data['key']]), function($data, $key){
                         return intval($data);
                     });
-                break;
-                case BaseTypeEnum::ARRAY_OF_ID:
-                    if(isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])){
-                        $options["joinClass"] = filter($options["joinClass"], function($value) use($data){
-                            return $value !== $data["class"];
-                        });
-                        $this->$key = array();
-                        foreach($this->{$data["field"]} as $id){
-                            array_push($this->$key, DB::getByID($data["class"], $id,  $options));
-                        }
-                    }
                 break;
             }
         }
@@ -111,5 +104,4 @@ class BaseTypeEnum{
     const NUMBER = 5;
     const Boolean = 6;
     const INT_ARRAY = 7;
-    const ARRAY_OF_ID = 8;
 }
