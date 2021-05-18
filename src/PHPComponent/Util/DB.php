@@ -127,6 +127,16 @@ abstract class DB{
         self::$_conn->commit();
     }
 
+    static function join($db, $dbObjectList, $whereConditionList = array()){
+        self::addWhereConditionList($whereConditionList);
+        $field_query = "";
+        foreach ($dbObjectList as $dbObject) {
+            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
+            self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
+        }
+        return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
+    }
+
     private static function addWhereConditionList($whereConditionList){
         foreach ($whereConditionList as $key => $value) {
             if($value === null){
@@ -136,6 +146,18 @@ abstract class DB{
             }
         }
     }
+}
+
+function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
+{
+    $sql = "";
+    $fields = filter($class::getFields(), function($field){
+        return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID);
+    });
+    foreach ($fields as $value) {
+        $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
+    }
+    return substr_replace($sql, " ", -2);
 }
 
 function addDefaultValue($parameters, $fieldTypeList){

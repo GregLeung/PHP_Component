@@ -335,7 +335,8 @@ function map($array, $function){
 function filter($array, $function){
     $result = array();
     foreach($array as $key=> $data){
-        if($function($data, $key)){
+        $size = sizeof($result);
+        if($function($data, $key, $size)){
             array_push($result, $data);
         }
     }
@@ -392,7 +393,7 @@ function getCurrentUser($userClass){
  function sortPaging($dataList, $sortProp, $sortOrder){
     try{
         usort($dataList, function ($a, $b) use($sortProp, $sortOrder){ 
-            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp): ($a->$sortProp < $b->$sortProp);
+            return ($sortOrder === "ascending") ? ($a->$sortProp < $b->$sortProp): ($a->$sortProp > $b->$sortProp);
         });
     }catch(Exception $e){
        return $dataList;
@@ -406,9 +407,9 @@ function getCurrentUser($userClass){
  }
 
  function search($dataList, $search, $limit){
-    return filter($dataList, function($data, $index) use($search, $limit){
-        if($index >= $limit) return false;
+    return filter($dataList, function($data, $index, $size) use($search, $limit){
         if($search === null) return true;
+        if($size >= $limit) return false;
         return checkSearch($search, $data);
     });
  }
