@@ -111,6 +111,15 @@ abstract class DB{
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         return $id;
     }
+    static function join($db, $dbObjectList, $whereConditionList = array()){
+        self::addWhereConditionList($whereConditionList);
+        $field_query = "";
+        foreach ($dbObjectList as $dbObject) {
+            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
+            self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
+        }
+        return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
+    }
 
     static function startTransaction()
     {
@@ -125,16 +134,6 @@ abstract class DB{
     static function commit()
     {
         self::$_conn->commit();
-    }
-
-    static function join($db, $dbObjectList, $whereConditionList = array()){
-        self::addWhereConditionList($whereConditionList);
-        $field_query = "";
-        foreach ($dbObjectList as $dbObject) {
-            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
-            self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
-        }
-        return parseValue(self::getRaw($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
     }
 
     private static function addWhereConditionList($whereConditionList){
@@ -192,6 +191,8 @@ function convertParametersToString($parameters, $typeList)
     }
     return $result;
 }
+
+
 
 function rawDataListTModelList($rawDataList, $class, $options)
 {
