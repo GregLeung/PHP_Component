@@ -214,7 +214,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             $result = DB::getAll($class,  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
-            if(isset($parameters["whereCondition"]))
+            if(isset($parameters["whereCondition"])) //TO BE DEPRECATED
                 $result = filter($result, function($data, $key) use($parameters){
                     foreach($parameters["whereCondition"] as $whereCondition){
                         foreach ($whereCondition as $key => $value){
@@ -224,6 +224,8 @@ function generateBaseURL($arrayOfModel, $parameters)
                     }
                     return false;
                 });
+            if(isset($parameters["advancedSearch"]))
+                $result = advancedSearch($result, $parameters["advancedSearch"]);
             if(isset($parameters["paging"])) $result = $dataList = paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"])?$parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"])?$parameters["paging"]["sort"]:null);
             return new Response(200, "Success", array($class::getSelfName() => $result), true);
         } else if ($parameters["ACTION"] === "get_" . $class::getSelfName()) {
@@ -335,8 +337,7 @@ function map($array, $function){
 function filter($array, $function){
     $result = array();
     foreach($array as $key=> $data){
-        $size = sizeof($result);
-        if($function($data, $key, $size)){
+        if($function($data, $key)){
             array_push($result, $data);
         }
     }
@@ -357,6 +358,57 @@ function getCurrentUser($userClass){
     return $user;
  }
 
+ function isArrayDuplicate($array){
+    return count($array) !== count(array_unique($array));
+ }
+
+ function advancedSearch($data, $advancedSearch){
+    foreach($advancedSearch as $column => $searchFilterSet){
+        switch($searchFilterSet["type"]){
+            case "FREETEXT":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    writeLog((strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false), "", "");
+                    return (strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false);
+                });
+                break;
+            case "SELECTION":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    return (strval(getDeepProp($data, $column)) === strval($searchFilterSet["value"]));
+                });
+                break;
+            case "MULTI-SELECTION":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    foreach($searchFilterSet["value"] as $value){
+                        if(strval(getDeepProp($data, $column)) === strval($value))
+                            return true;
+                    }
+                    return false;
+                });
+                break;
+            case "MULTI-SELECTION-SELECTOR":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    foreach($searchFilterSet["value"] as $value){
+                        if(strval(getDeepProp($data, $column)) === strval($value))
+                            return true;
+                    }
+                    return false;
+                });
+                break;
+            case "TIME-RANGE":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    return (isBetweenDates($searchFilterSet["value"][0], $searchFilterSet["value"][1], getDeepProp($data, $column)));
+                });
+                break;
+            case "NUMBER-RANGE":
+                $data = filter($data, function($data, $key) use($column, $searchFilterSet){
+                    $value = intval(getDeepProp($data, $column));
+                    return ($value >= intval($searchFilterSet["value"][0]) && $value <= intval($searchFilterSet["value"][1]));
+                });
+                break;
+        }
+    }
+    return $data;
+ }
  function paging($dataList,$page, $pageSize, $search = "", $sort = array(
      "prop"=> "ID",
      "order"=> "descending",
@@ -393,7 +445,23 @@ function getCurrentUser($userClass){
  function sortPaging($dataList, $sortProp, $sortOrder){
     try{
         usort($dataList, function ($a, $b) use($sortProp, $sortOrder){ 
-            return ($sortOrder === "ascending") ? ($a->$sortProp < $b->$sortProp): ($a->$sortProp > $b->$sortProp);
+            if(strpos($sortProp, ".") !== false){
+                $sortPropList = explode(".", $sortProp);
+                foreach($sortPropList as $prop){
+                    if(isset($a->$prop))
+                        $a = $a->$prop;
+                    else
+                        return false;
+                    if(isset($b->$prop))
+                        $b = $b->$prop;
+                    else
+                        return false;
+                }
+                if(is_array($a) || is_array($b))
+                    return ($sortOrder === "ascending") ? (json_encode($a) > json_encode($b)): (json_encode($a) < json_encode($b));
+                return ($sortOrder === "ascending") ? ($a > $b): ($a < $b);
+            }
+            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp): ($a->$sortProp < $b->$sortProp);
         });
     }catch(Exception $e){
        return $dataList;
@@ -406,13 +474,39 @@ function getCurrentUser($userClass){
     return array_map('json_decode', array_unique(array_map('json_encode', $array)));
  }
 
+ function checkClassInstanceExisted($class, $ID){
+    // if(DB::getByID($class, $ID) == null) throw new Exception($class::getSelfName)
+ }
+
  function search($dataList, $search, $limit){
-    return filter($dataList, function($data, $index, $size) use($search, $limit){
+    return filter($dataList, function($data, $index) use($search, $limit){
+        if($index >= $limit) return false;
         if($search === null) return true;
-        if($size >= $limit) return false;
         return checkSearch($search, $data);
     });
  }
+
+function getDeepProp($classObject, $prop){
+    $propList = explode(".", $prop);
+    foreach($propList as $prop){
+        if(isset($classObject->$prop))
+            $classObject = $classObject->$prop;
+        else{
+            $classObject = null;
+            break;
+        }
+    }
+    return $classObject;
+}
+
+function isBetweenDates($fromDate, $toDate, $value){
+    $valueDate = date('Y-m-d H:i:s', strtotime($value));
+    $dateBegin = date('Y-m-d H:i:s', strtotime($fromDate));
+    $dateEnd = date('Y-m-d H:i:s', strtotime($toDate));
+    if (($valueDate >= $dateBegin) && ($valueDate <= $dateEnd))
+        return true;
+    return false;   
+}
 
  function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText){
     $searchList = array_unique(preg_split('/\s+/', strtolower($searchText)));
