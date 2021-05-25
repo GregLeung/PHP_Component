@@ -368,19 +368,25 @@ function getCurrentUser($userClass){
         switch($searchFilterSet["type"]){
             case "FREETEXT":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false);
+                    return (strpos(strtolower(strval(getDeepProp($data, $column))), strtolower(strval($searchFilterSet["value"]))) !== false);
                 });
                 break;
             case "SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strval(getDeepProp($data, $column)) === strval($searchFilterSet["value"]));
+                    return (strtolower(strval(getDeepProp($data, $column))) === strtolower(strval($searchFilterSet["value"])));
                 });
                 break;
             case "MULTI-SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        if(strval(getDeepProp($data, $column)) === strval($value))
-                            return true;
+                        $dataValue = getDeepProp($data, $column);
+                        if(is_array($dataValue)){
+                            if(in_array($value, $dataValue))
+                                return true;
+                        }else{
+                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
+                                return true;
+                        }
                     }
                     return false;
                 });
@@ -388,8 +394,14 @@ function getCurrentUser($userClass){
             case "MULTI-SELECTION-SELECTOR":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        if(strval(getDeepProp($data, $column)) === strval($value))
-                            return true;
+                        $dataValue = getDeepProp($data, $column);
+                        if(is_array($dataValue)){
+                            if(in_array($value, $dataValue))
+                                return true;
+                        }else{
+                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
+                                return true;
+                        }
                     }
                     return false;
                 });
