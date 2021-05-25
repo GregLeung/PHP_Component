@@ -337,7 +337,8 @@ function map($array, $function){
 function filter($array, $function){
     $result = array();
     foreach($array as $key=> $data){
-        if($function($data, $key)){
+        $size = sizeof($result);
+        if($function($data, $key, $size)){
             array_push($result, $data);
         }
     }
@@ -367,7 +368,6 @@ function getCurrentUser($userClass){
         switch($searchFilterSet["type"]){
             case "FREETEXT":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    writeLog((strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false), "", "");
                     return (strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false);
                 });
                 break;
@@ -479,8 +479,8 @@ function getCurrentUser($userClass){
  }
 
  function search($dataList, $search, $limit){
-    return filter($dataList, function($data, $index) use($search, $limit){
-        if($index >= $limit) return false;
+    return filter($dataList, function($data, $index, $size) use($search, $limit){
+        if($size > $limit) return false;
         if($search === null) return true;
         return checkSearch($search, $data);
     });
