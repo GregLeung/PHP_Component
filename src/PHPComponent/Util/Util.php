@@ -252,6 +252,8 @@ function generateBaseURL($arrayOfModel, $parameters)
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
             return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
+        }else if($parameters["ACTION"] === "get_self_Notification"){
+            return new Response(200, "Success", Notification::getSelfAllNotification());
         }
     }
 }
@@ -368,25 +370,19 @@ function getCurrentUser($userClass){
         switch($searchFilterSet["type"]){
             case "FREETEXT":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strpos(strtolower(strval(getDeepProp($data, $column))), strtolower(strval($searchFilterSet["value"]))) !== false);
+                    return (strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false);
                 });
                 break;
             case "SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strtolower(strval(getDeepProp($data, $column))) === strtolower(strval($searchFilterSet["value"])));
+                    return (strval(getDeepProp($data, $column)) === strval($searchFilterSet["value"]));
                 });
                 break;
             case "MULTI-SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        $dataValue = getDeepProp($data, $column);
-                        if(is_array($dataValue)){
-                            if(in_array($value, $dataValue))
-                                return true;
-                        }else{
-                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
-                                return true;
-                        }
+                        if(strval(getDeepProp($data, $column)) === strval($value))
+                            return true;
                     }
                     return false;
                 });
@@ -394,14 +390,8 @@ function getCurrentUser($userClass){
             case "MULTI-SELECTION-SELECTOR":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        $dataValue = getDeepProp($data, $column);
-                        if(is_array($dataValue)){
-                            if(in_array($value, $dataValue))
-                                return true;
-                        }else{
-                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
-                                return true;
-                        }
+                        if(strval(getDeepProp($data, $column)) === strval($value))
+                            return true;
                     }
                     return false;
                 });
@@ -446,7 +436,7 @@ function getCurrentUser($userClass){
  }
  
  function checkSearch($search, $data){
-    if($search == "" || $search == null) return true;
+    if($search == "" || $search == null || is_array($search)) return true;
     foreach ($data as $key => $value) {
        if (strpos(strtolower(json_encode($value)), strtolower($search)) !== false) 
           return true;
