@@ -46,6 +46,53 @@ abstract class BaseModel
         $this->assignField($object, static::getFields(), $options);
     }
 
+    public function assignVirtualField($cachedList){
+        foreach(static::getFields() as $data) {
+            $key = $data['key'];
+            switch($data['type']){
+                case BaseTypeEnum::TO_MULTI:
+                    $result = array();
+                    if(isset($cachedList[$data["class"]])){
+                        foreach($cachedList[$data["class"]] as $each){
+                            if($this->{$data["field"]} === $each->ID){
+                                $each->assignVirtualField($cachedList);
+                                array_push($result, $each);
+                            }
+                        }
+                        $this->$key = $result;
+                    }
+                    break;
+                case BaseTypeEnum::TO_SINGLE:
+                    if(isset($cachedList[$data["class"]])){
+                        $result = null;
+                        foreach($cachedList[$data["class"]] as $each){
+                            if($this->{$data["field"]} === $each->ID){
+                                $each->assignVirtualField($cachedList);
+                                $result = $each;
+                                break;
+                            }
+                        }
+                        $this->$key = $result;
+                    }
+                    break;
+                case BaseTypeEnum::ARRAY_OF_ID:
+                    if(isset($cachedList[$data["class"]])){
+                        $result = array();
+                        foreach($this->{$data["field"]} as $id){
+                            foreach($cachedList[$data["class"]] as $each){
+                                if($id == $each->ID){
+                                    $each->assignVirtualField($cachedList);
+                                    array_push($result, $each);
+                                }
+                            }
+                        }
+                        $this->$key = $result;
+                    }
+                    break;
+            }
+        }
+    }
+
     protected function assignField($object, $fieldArray, $options = array()){
         foreach($fieldArray as $data) {
             $key = $data['key'];

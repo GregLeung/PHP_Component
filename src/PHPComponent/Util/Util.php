@@ -211,9 +211,17 @@ function generateBaseURL($arrayOfModel, $parameters)
 {
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all") {
-            $result = DB::getAll($class,  array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
-            ));
+            $cachedList = array();
+            $result = array();
+            $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
+            foreach($joinClassList as $joinClass){
+                $cachedList[$joinClass::getSelfName()] = DB::getAll($joinClass);
+            }
+            $dataClass = DB::getAll($class);
+            foreach($dataClass as $each){
+                $each->assignVirtualField($cachedList);
+                array_push($result, $each);
+            }
             if(isset($parameters["whereCondition"])) //TO BE DEPRECATED
                 $result = filter($result, function($data, $key) use($parameters){
                     foreach($parameters["whereCondition"] as $whereCondition){
@@ -252,8 +260,6 @@ function generateBaseURL($arrayOfModel, $parameters)
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
             return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
-        }else if($parameters["ACTION"] === "get_self_Notification"){
-            return new Response(200, "Success", Notification::getSelfAllNotification());
         }
     }
 }
@@ -370,19 +376,25 @@ function getCurrentUser($userClass){
         switch($searchFilterSet["type"]){
             case "FREETEXT":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strpos(strval(getDeepProp($data, $column)), strval($searchFilterSet["value"])) !== false);
+                    return (strpos(strtolower(strval(getDeepProp($data, $column))), strtolower(strval($searchFilterSet["value"]))) !== false);
                 });
                 break;
             case "SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
-                    return (strval(getDeepProp($data, $column)) === strval($searchFilterSet["value"]));
+                    return (strtolower(strval(getDeepProp($data, $column))) === strtolower(strval($searchFilterSet["value"])));
                 });
                 break;
             case "MULTI-SELECTION":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        if(strval(getDeepProp($data, $column)) === strval($value))
-                            return true;
+                        $dataValue = getDeepProp($data, $column);
+                        if(is_array($dataValue)){
+                            if(in_array($value, $dataValue))
+                                return true;
+                        }else{
+                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
+                                return true;
+                        }
                     }
                     return false;
                 });
@@ -390,8 +402,14 @@ function getCurrentUser($userClass){
             case "MULTI-SELECTION-SELECTOR":
                 $data = filter($data, function($data, $key) use($column, $searchFilterSet){
                     foreach($searchFilterSet["value"] as $value){
-                        if(strval(getDeepProp($data, $column)) === strval($value))
-                            return true;
+                        $dataValue = getDeepProp($data, $column);
+                        if(is_array($dataValue)){
+                            if(in_array($value, $dataValue))
+                                return true;
+                        }else{
+                            if(strtolower(strval($dataValue)) === strtolower(strval($value)))
+                                return true;
+                        }
                     }
                     return false;
                 });
