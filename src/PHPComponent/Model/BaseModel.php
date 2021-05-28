@@ -54,7 +54,7 @@ abstract class BaseModel
                     $result = array();
                     if(isset($cachedList[$data["class"]])){
                         foreach($cachedList[$data["class"]] as $each){
-                            if($this->{$data["field"]} === $each->ID){
+                            if($this->{$data["field"]} == $each->ID){
                                 $each->assignVirtualField($cachedList);
                                 array_push($result, $each);
                             }
@@ -66,7 +66,7 @@ abstract class BaseModel
                     if(isset($cachedList[$data["class"]])){
                         $result = null;
                         foreach($cachedList[$data["class"]] as $each){
-                            if($this->{$data["field"]} === $each->ID){
+                            if($this->{$data["field"]} == $each->ID){
                                 $each->assignVirtualField($cachedList);
                                 $result = $each;
                                 break;
@@ -98,7 +98,10 @@ abstract class BaseModel
             $key = $data['key'];
             switch($data['type']){
                 case BaseTypeEnum::STRING:
-                    $this->$key = $object[$data['key']];
+                    if(($object[$data['key']] == null))
+                        $this->$key = null;
+                    else
+                        $this->$key = strval($object[$data['key']]);
                 break;
                 case BaseTypeEnum::NUMBER:
                     if(($object[$data['key']] === null)) $this->$key = null;
