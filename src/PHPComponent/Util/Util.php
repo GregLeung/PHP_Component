@@ -215,7 +215,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             $result = array();
             $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
             foreach($joinClassList as $joinClass){
-                $cachedList[$joinClass::getSelfName()] = DB::getAll($joinClass);
+                $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
             }
             $dataClass = DB::getAll($class);
             foreach($dataClass as $each){
@@ -260,6 +260,9 @@ function generateBaseURL($arrayOfModel, $parameters)
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
             return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"]: null, 50));
+        }
+        else if($parameters["ACTION"] === "get_self_Notification"){
+            return new Response(200, "Success", Notification::getSelfAllNotification());
         }
     }
 }

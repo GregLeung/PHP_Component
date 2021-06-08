@@ -17,9 +17,13 @@ abstract class DB{
             $result = $class::permissionGetHandling($result);
         return $result;
     }
-    static function getAll($class, $options = null)
-    {
+    static function getAll($class, $options = null){
         $modelList = rawDataListTModelList(self::getRaw($class), $class,  $options);
+        return $modelList;
+    }
+
+    static function getAllMap($class, $options = null){
+        $modelList = rawDataListTModelMap(self::getRaw($class), $class,  $options);
         return $modelList;
     }
 
@@ -193,6 +197,14 @@ function convertParametersToString($parameters, $typeList)
 }
 
 
+function rawDataListTModelMap($rawDataList, $class, $options)
+{
+    $modelMap = array();
+    foreach ($rawDataList as $data) {
+        $modelMap[$data["ID"]] = new $class($data, $options);
+    }
+    return $modelMap;
+}
 
 function rawDataListTModelList($rawDataList, $class, $options)
 {
