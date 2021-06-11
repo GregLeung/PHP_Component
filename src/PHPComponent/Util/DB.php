@@ -79,7 +79,7 @@ abstract class DB{
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
         $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters, $class::getFieldsWithType()));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
-    }
+    } 
     static function update($parameters, $class)
     {
         $parameters = filterParameterByClass($parameters, $class);
