@@ -19,6 +19,7 @@
         public function ready($function){
             DB::startTransaction();
             try{
+                apiKeyChecking();
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
                 $this->response = generateBaseURL($this->classList, $this->parameters);
                 $this->response = $function($this->config, $this->parameters, $this->response);
