@@ -78,7 +78,7 @@ abstract class BaseModel
                     if (isset($cachedList[$data["class"]]) && isset($cachedList[$data["class"]][$this->{$data["field"]}])) {
                         $each = $cachedList[$data["class"]][$this->{$data["field"]}];
                         $each->customAssignField($cachedList, $options);
-                        $this->key = $each;
+                        $this->$key = $each;
                     }
                     break;
                 case BaseTypeEnum::ARRAY_OF_ID:
