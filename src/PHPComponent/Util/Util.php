@@ -224,9 +224,9 @@ function getAllApi($parameters, $class)
     foreach ($joinClassList as $joinClass) {
         $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
     }
-    $dataClass = DB::getAll($class);
+    $dataClass = DB::getAll($class, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array()));
     foreach ($dataClass as $each) {
-        $each->assignVirtualField($cachedList);
+        $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array()));
         array_push($result, $each);
     }
     if (isset($parameters["whereCondition"]))
@@ -253,7 +253,7 @@ function generateBaseURL($arrayOfModel, $parameters)
         } else if ($parameters["ACTION"] === "get_" . $class::getSelfName()) {
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"],  array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
             ))), true);
         } else if ($parameters["ACTION"] === "default_update_" . $class::getSelfName()) {
             if (!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
