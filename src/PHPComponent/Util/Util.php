@@ -254,6 +254,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             if (!isExistedNotNull($parameters, "ID")) throw new Exception('ID does not existed');
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"],  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
+                "computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(),
             ))), true);
         } else if ($parameters["ACTION"] === "default_update_" . $class::getSelfName()) {
             if (!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");
