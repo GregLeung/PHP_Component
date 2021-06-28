@@ -33,7 +33,7 @@ abstract class BaseModel
     static function getRealFields()
     {
         return filter(static::getFields(), function ($data, $key) {
-            return $data["type"] !== BaseTypeEnum::TO_MULTI && $data["type"] !== BaseTypeEnum::TO_SINGLE && $data["type"] !== BaseTypeEnum::ARRAY_OF_ID && $data["type"] !== BaseTypeEnum::COMPUTED; 
+            return $data["type"] !== BaseTypeEnum::TO_MULTI && $data["type"] !== BaseTypeEnum::TO_SINGLE && $data["type"] !== BaseTypeEnum::ARRAY_OF_ID && $data["type"] !== BaseTypeEnum::COMPUTED;
         });
     }
 
