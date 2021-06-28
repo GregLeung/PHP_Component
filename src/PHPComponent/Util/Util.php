@@ -226,7 +226,7 @@ function getAllApi($parameters, $class)
     }
     $dataClass = DB::getAll($class, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array()));
     foreach ($dataClass as $each) {
-        $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array()));
+        $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()));
         array_push($result, $each);
     }
     if (isset($parameters["whereCondition"]))

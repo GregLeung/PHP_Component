@@ -33,7 +33,7 @@ abstract class BaseModel
     static function getRealFields()
     {
         return filter(static::getFields(), function ($data, $key) {
-            return $data["type"] !== BaseTypeEnum::TO_MULTI && $data["type"] !== BaseTypeEnum::TO_SINGLE && $data["type"] !== BaseTypeEnum::ARRAY_OF_ID;
+            return $data["type"] !== BaseTypeEnum::TO_MULTI && $data["type"] !== BaseTypeEnum::TO_SINGLE && $data["type"] !== BaseTypeEnum::ARRAY_OF_ID && $data["type"] !== BaseTypeEnum::COMPUTED; 
         });
     }
 
@@ -60,29 +60,44 @@ abstract class BaseModel
     {
         foreach (static::getFields() as $data) {
             $key = $data['key'];
-            // if(static::isMasked($key, $options)){
-            //     $this->$key = null;
-            //     continue;
-            // }
             switch ($data['type']) {
                 case BaseTypeEnum::TO_MULTI:
                     $result = array();
-                    if (isset($cachedList[$data["class"]]) && isset($cachedList[$data["class"]][$this->{$data["field"]}])) {
-                        $each = $cachedList[$data["class"]][$this->{$data["field"]}];
-                        $each->customAssignField($cachedList, $options);
-                        array_push($result, $each);
+                    if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
+                        $joinKey = array_search($data["class"], $options["joinClass"]);
+                        if (false !== $joinKey) {
+                            array_splice($options["joinClass"], $joinKey, 1);
+                        }
+                        foreach($cachedList[$data["class"]] as $each){
+                            if(isset($each->{$data["field"]}) && $this->ID === $each->{$data["field"]}){
+                                $each->customAssignField($cachedList, $options);
+                                array_push($result, $each);
+                            }
+                        }
                         $this->$key = $result;
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:
-                    if (isset($cachedList[$data["class"]]) && isset($cachedList[$data["class"]][$this->{$data["field"]}])) {
+                    if (isset($cachedList[$data["class"]]) && isset($cachedList[$data["class"]][$this->{$data["field"]}]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
+                        $joinKey = array_search($data["class"], $options["joinClass"]);
+                        if (false !== $joinKey) {
+                            array_splice($options["joinClass"], $joinKey, 1);
+                        }
+                        $joinKey = array_search($data["class"], $options["joinClass"]);
+                        if (false !== $joinKey) {
+                            array_splice($options["joinClass"], $joinKey, 1);
+                        }
                         $each = $cachedList[$data["class"]][$this->{$data["field"]}];
                         $each->customAssignField($cachedList, $options);
                         $this->$key = $each;
                     }
                     break;
                 case BaseTypeEnum::ARRAY_OF_ID:
-                    if (isset($cachedList[$data["class"]])) {
+                    if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
+                        $joinKey = array_search($data["class"], $options["joinClass"]);
+                        if (false !== $joinKey) {
+                            array_splice($options["joinClass"], $joinKey, 1);
+                        }
                         $result = array();
                         foreach ($this->{$data["field"]} as $id) {
                             if (isset($cachedList[$data["class"]][$id])) {
