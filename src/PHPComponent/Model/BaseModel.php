@@ -60,6 +60,10 @@ abstract class BaseModel
     {
         foreach (static::getFields() as $data) {
             $key = $data['key'];
+            if(static::isMasked($key, $options)){
+                $this->$key = null;
+                continue;
+            };
             switch ($data['type']) {
                 case BaseTypeEnum::TO_MULTI:
                     $result = array();
@@ -70,7 +74,7 @@ abstract class BaseModel
                         }
                         foreach($cachedList[$data["class"]] as $each){
                             if(isset($each->{$data["field"]}) && $this->ID === $each->{$data["field"]}){
-                                $each->customAssignField($cachedList, $options);
+                                $each->customAssignField($cachedList, static::mergeOptions($key, $options));
                                 array_push($result, $each);
                             }
                         }
@@ -88,7 +92,7 @@ abstract class BaseModel
                             array_splice($options["joinClass"], $joinKey, 1);
                         }
                         $each = $cachedList[$data["class"]][$this->{$data["field"]}];
-                        $each->customAssignField($cachedList, $options);
+                        $each->customAssignField($cachedList, static::mergeOptions($key, $options));
                         $this->$key = $each;
                     }
                     break;
@@ -102,7 +106,7 @@ abstract class BaseModel
                         foreach ($this->{$data["field"]} as $id) {
                             if (isset($cachedList[$data["class"]][$id])) {
                                 $each = $cachedList[$data["class"]][$id];
-                                $each->customAssignField($cachedList, $options);
+                                $each->customAssignField($cachedList, static::mergeOptions($key, $options));
                                 array_push($result, $each);
                             }
                         }
@@ -122,7 +126,7 @@ abstract class BaseModel
     {
         foreach ($fieldArray as $data) {
             $key = $data['key'];
-            // if(static::isMasked($key, $options)) continue;
+            if(static::isMasked($key, $options)) continue;
             switch ($data['type']) {
                 case BaseTypeEnum::STRING:
                     if (($object[$data['key']] == null))
@@ -146,7 +150,7 @@ abstract class BaseModel
                         if (false !== $joinKey) {
                             array_splice($options["joinClass"], $joinKey, 1);
                         }
-                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  $options);
+                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  static::mergeOptions($key, $options));
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:
@@ -155,7 +159,7 @@ abstract class BaseModel
                         if (false !== $joinKey) {
                             array_splice($options["joinClass"], $joinKey, 1);
                         }
-                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  $options);
+                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  static::mergeOptions($key, $options));
                     }
                     break;
                 case BaseTypeEnum::Boolean:
@@ -173,8 +177,9 @@ abstract class BaseModel
                             array_splice($options["joinClass"], $joinKey, 1);
                         }
                         $this->$key = array();
+                        
                         foreach ($this->{$data["field"]} as $id) {
-                            array_push($this->$key, DB::getByID($data["class"], $id,  $options));
+                            array_push($this->$key, DB::getByID($data["class"], $id,  static::mergeOptions($key, $options)));
                         }
                     }
                     break;
@@ -196,26 +201,25 @@ abstract class BaseModel
         return static::class;
     }
 
-    // private static function mergeOptions($key, $options)
-    // {
-    //     $result = array();
-    //     if (!isset($options["passedProperty"])) $result["passedProperty"] = $key;
-    //     else $result["passedProperty"] .= "." . $key;
-    //     return array_merge($options, $result);
-    // }
-//     private static function isMasked($key, $options)
-//     {
-//         $isMasked = false;
-//         if (isset($options["mask"])) {
-//             foreach ($options["mask"] as $mask) {
-//                 if ($mask == $key || (isset($options["passedProperty"]) && $options["passedProperty"] . "." . $key == $mask)) {
-//                     $isMasked = true;
-//                     break;
-//                 }
-//             }
-//         }
-//         return $isMasked;
-//     }
+    private static function mergeOptions($key, $options)
+    {
+        if (!isset($options["passedProperty"])) $options["passedProperty"] = $key;
+        else $options["passedProperty"] .= "." . $key;
+        return $options;
+    }
+    private static function isMasked($key, $options)
+    {
+        $isMasked = false;
+        if (isset($options["mask"])) {
+            foreach ($options["mask"] as $mask) {
+                if ( (!isset($options["passedProperty"]) && $mask == $key )|| (isset($options["passedProperty"]) && $options["passedProperty"] . "." . $key == $mask)) {
+                    $isMasked = true;
+                    break;
+                }
+            }
+        }
+        return $isMasked;
+    }
 }
 
 class BaseTypeEnum

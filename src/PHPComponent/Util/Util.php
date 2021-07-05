@@ -226,7 +226,7 @@ function getAllApi($parameters, $class)
     }
     $dataClass = DB::getAll($class, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array()));
     foreach ($dataClass as $each) {
-        $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()));
+        $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(), "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array()));
         array_push($result, $each);
     }
     if (isset($parameters["whereCondition"]))
@@ -255,6 +255,7 @@ function generateBaseURL($arrayOfModel, $parameters)
             return new Response(200, "Success", array($class::getSelfName() => DB::getByID($class, $parameters["ID"],  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
                 "computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(),
+                "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array(),
             ))), true);
         } else if ($parameters["ACTION"] === "default_update_" . $class::getSelfName()) {
             if (!isset($parameters["ID"])) throw new Exception("ID Does Not Existed");

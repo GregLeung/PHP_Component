@@ -168,7 +168,7 @@ function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
 {
     $sql = "";
     $fields = filter($class::getFields(), function($field){
-        return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID);
+        return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID && $field["type"] !== BaseTypeEnum::COMPUTED);
     });
     foreach ($fields as $value) {
         $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
