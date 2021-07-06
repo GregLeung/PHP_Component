@@ -68,13 +68,9 @@ abstract class BaseModel
                 case BaseTypeEnum::TO_MULTI:
                     $result = array();
                     if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
                         foreach($cachedList[$data["class"]] as $each){
                             if(isset($each->{$data["field"]}) && $this->ID === $each->{$data["field"]}){
-                                $each->customAssignField($cachedList, static::mergeOptions($key, $options));
+                                $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]),  $options));
                                 array_push($result, $each);
                             }
                         }
@@ -83,30 +79,18 @@ abstract class BaseModel
                     break;
                 case BaseTypeEnum::TO_SINGLE:
                     if (isset($cachedList[$data["class"]]) && isset($cachedList[$data["class"]][$this->{$data["field"]}]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
                         $each = $cachedList[$data["class"]][$this->{$data["field"]}];
-                        $each->customAssignField($cachedList, static::mergeOptions($key, $options));
+                        $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options,));
                         $this->$key = $each;
                     }
                     break;
                 case BaseTypeEnum::ARRAY_OF_ID:
                     if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
                         $result = array();
                         foreach ($this->{$data["field"]} as $id) {
                             if (isset($cachedList[$data["class"]][$id])) {
                                 $each = $cachedList[$data["class"]][$id];
-                                $each->customAssignField($cachedList, static::mergeOptions($key, $options));
+                                $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options));
                                 array_push($result, $each);
                             }
                         }
@@ -146,20 +130,12 @@ abstract class BaseModel
                     break;
                 case BaseTypeEnum::TO_MULTI:
                     if (isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
-                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  static::mergeOptions($key, $options));
+                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options,));
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:
                     if (isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
-                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  static::mergeOptions($key, $options));
+                        $this->$key = DB::getByID($data["class"], $this->{$data["field"]},  static::mergeOptions($key,  array_search($data["class"], $options["joinClass"]), $options));
                     }
                     break;
                 case BaseTypeEnum::Boolean:
@@ -172,14 +148,9 @@ abstract class BaseModel
                     break;
                 case BaseTypeEnum::ARRAY_OF_ID:
                     if (isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $joinKey = array_search($data["class"], $options["joinClass"]);
-                        if (false !== $joinKey) {
-                            array_splice($options["joinClass"], $joinKey, 1);
-                        }
                         $this->$key = array();
-                        
                         foreach ($this->{$data["field"]} as $id) {
-                            array_push($this->$key, DB::getByID($data["class"], $id,  static::mergeOptions($key, $options)));
+                            array_push($this->$key, DB::getByID($data["class"], $id,  static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options)));
                         }
                     }
                     break;
@@ -201,8 +172,9 @@ abstract class BaseModel
         return static::class;
     }
 
-    private static function mergeOptions($key, $options)
+    private static function mergeOptions($key, $joinKey,$options)
     {
+        array_splice($options["joinClass"], $joinKey, 1);
         if (!isset($options["passedProperty"])) $options["passedProperty"] = $key;
         else $options["passedProperty"] .= "." . $key;
         return $options;
