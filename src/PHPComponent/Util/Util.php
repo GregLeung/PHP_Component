@@ -58,6 +58,17 @@ function writeLog($filename, $message, $line)
     fclose($file);
 }
 
+function writeCustomLog($value)
+{
+    $fileLocation = SITE_ROOT . "/log/log_" . date("Y-m-d") . ".txt";
+    if (file_exists($fileLocation))
+        $file = fopen($fileLocation, "a");
+    else
+        $file = fopen($fileLocation, "w");
+    fwrite($file, $value . PHP_EOL);
+    fclose($file);
+}
+
 function readConfig()
 {
     return json_decode(file_get_contents("./config.json"));
@@ -402,17 +413,46 @@ function isArrayDuplicate($array)
     return count($array) !== count(array_unique($array));
 }
 
+function multiFieldSearch($type, $searchFilterSet, $eachData){
+    if(sizeof($searchFilterSet['multiFields']) > 0){
+        foreach($searchFilterSet['multiFields'] as $additionalField){
+            switch($type){
+                case "String":
+                    if((strpos(strtolower(strval(getDeepProp($eachData, $additionalField))), strtolower(strval($searchFilterSet["value"]))) !== false))
+                        return true;
+                    break;
+                case "Multi-Selection":
+                    //TODO
+                    return false;
+                    break;
+                case "TIME-RANGE":
+                    //TODO
+                    return false;
+                    break;
+                case "NUMBER-RANGE":
+                    //TODO
+                    return false;
+                    break;
+            }
+        }
+    }
+}
+
 function advancedSearch($data, $advancedSearch)
 {
     foreach ($advancedSearch as $column => $searchFilterSet) {
         switch ($searchFilterSet["type"]) {
             case "FREETEXT":
                 $data = filter($data, function ($data, $key) use ($column, $searchFilterSet) {
+                    if(multiFieldSearch("String", $searchFilterSet, $data))
+                        return true;
                     return (strpos(strtolower(strval(getDeepProp($data, $column))), strtolower(strval($searchFilterSet["value"]))) !== false);
                 });
                 break;
             case "SELECTION":
                 $data = filter($data, function ($data, $key) use ($column, $searchFilterSet) {
+                    if(multiFieldSearch("String", $searchFilterSet, $data))
+                        return true;
                     return (strtolower(strval(getDeepProp($data, $column))) === strtolower(strval($searchFilterSet["value"])));
                 });
                 break;
@@ -490,7 +530,7 @@ function checkPaging($index, $page, $pageSize)
 function checkSearch($search, $data)
 {
     if ($search == "" || $search == null || is_array($search)) return true;
-    foreach ($data as $key => $value) {
+    foreach ($data as $key => $value) { 
         if (strpos(strtolower(json_encode($value)), strtolower($search)) !== false)
             return true;
     };
@@ -556,6 +596,8 @@ function getDeepProp($classObject, $prop)
             break;
         }
     }
+    if($classObject === false)
+        return 0;
     return $classObject;
 }
 
@@ -569,7 +611,7 @@ function isBetweenDates($fromDate, $toDate, $value)
     return false;
 }
 
-function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText)
+function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText, $limit = null)
 {
     $searchList = array_unique(preg_split('/\s+/', strtolower($searchText)));
     $result = array();
@@ -604,5 +646,6 @@ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText
             return ($a["count"] > $b["count"]) ? -1 : 1;
         return ($a["rating"] > $b["rating"]) ? -1 : 1;
     });
+    if($limit != null && sizeof($result) >= $limit) array_splice($result, $limit);
     return $result;
 }

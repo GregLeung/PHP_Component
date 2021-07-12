@@ -28,9 +28,13 @@ abstract class DB{
         // self::insertLog("GET", $result);
         return $result;
     }
-    static function getAll($class, $options = null){
+    static function getAll($class, $options = null){ // TO Be Deprecated
         $modelList = rawDataListTModelList(self::getRaw($class), $class,  $options);
         return $modelList;
+    }
+
+    static function getAll_new($class, $options = null){ // TO Be Deprecated
+        return getAllApi($options, $class);
     }
 
     static function getAllMap($class, $options = null){
