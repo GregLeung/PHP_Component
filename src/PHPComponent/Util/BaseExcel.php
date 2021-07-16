@@ -34,6 +34,7 @@ class BaseExcel {
             $this->setCellValue($this->currentPosition, $valueList[$i]);
             $this->currentPosition[0] += 1;
         }
+        $this->nextRow();
     }
 
     function setColumnValue($valueList, $options = null){
@@ -44,6 +45,7 @@ class BaseExcel {
             $this->setCellValue($this->currentPosition, $valueList[$i]);
             $this->currentPosition[1] += 1;
         }
+        $this->nextColumn();
     }
 
     function nextRow(){

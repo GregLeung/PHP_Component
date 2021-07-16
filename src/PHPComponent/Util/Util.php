@@ -285,7 +285,18 @@ function generateBaseURL($arrayOfModel, $parameters)
             $dataList = DB::getAll($class,  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
             ));
-            return new Response(200, "Success", search($dataList, isset($parameters["search"]) ? $parameters["search"] : null, 50));
+            $dataList = search($dataList, isset($parameters["search"]) ? $parameters["search"] : null, 100);
+            $matchedData = null;
+            if(isset($parameters["search"])){
+                $matchedData = DB::getByID($class, $parameters["search"], array(
+                    "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+                ));
+            } 
+            if($matchedData != null && !in_array($matchedData->ID, map($dataList, function($data, $key){
+                return $data->ID;
+            })))
+                array_push($dataList, $matchedData);
+            return new Response(200, "Success", $dataList);
         } else if ($parameters["ACTION"] === "get_self_Notification") {
             return new Response(200, "Success", Notification::getSelfAllNotification());
         }else if ($parameters["ACTION"] === "read_notification") {
@@ -293,6 +304,9 @@ function generateBaseURL($arrayOfModel, $parameters)
                 $notification->readNotification();
             }
             return new Response(200, "Success", array());
+        }
+        else if ($parameters["ACTION"] === "get_self") {
+            return new Response(200, "Success", $GLOBALS['currentUser']);;
         }
     }
 }
@@ -578,6 +592,7 @@ function checkClassInstanceExisted($class, $ID)
 
 function search($dataList, $search, $limit)
 {
+    $dataList = array_reverse($dataList);
     return filter($dataList, function ($data, $index, $size) use ($search, $limit) {
         if ($size > $limit) return false;
         if ($search === null) return true;
@@ -611,6 +626,21 @@ function isBetweenDates($fromDate, $toDate, $value)
     return false;
 }
 
+function getLatestTable($table, $time, $field){
+    $list = DB::getAll($table);
+    $list = filter($list, function($data, $key) use($field, $time){
+        if($data->{$field} == null)
+           return false;
+        return (isBetweenDates(date("Y-m-d H:i:s", strtotime($time)), date("Y-m-d H:i:s"), $data->{$field}));
+     });
+    usort($list, function ($a, $b) use($field){
+       if($a->{$field} == null)
+          return 1;
+       return ($a->{$field} > $b->{$field}) ? -1 : 1;
+    });
+    return $list;
+}
+
 function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText, $limit = null)
 {
     $searchList = array_unique(preg_split('/\s+/', strtolower($searchText)));
@@ -623,7 +653,7 @@ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText
         }
         $nameList = array_unique(preg_split('/\s+/', strtolower($name)));
         $count = 0;
-        $isAddToResult = false;
+        $isAddToResult = ($data["ID"] == $searchText) ? true : false;
         foreach ($nameList as $name) {
             $percentage = 0;
             foreach ($searchList as $searchText) {
