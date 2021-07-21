@@ -51,9 +51,13 @@ abstract class DB{
 
     static function getByID($class, $ID, $options = null)
     {
-        self::$_conn->where("ID", $ID);
-        $result = self::getRaw($class::getSelfName());
-        return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
+        try{
+            self::$_conn->where("ID", $ID);
+            $result = self::getRaw($class::getSelfName());
+            return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
+        }catch(Exception $e){
+            return null;
+        }
     }
 
     static function getByWhereCondition($class, $whereConditionList,  $options = null)

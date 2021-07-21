@@ -20,7 +20,7 @@ abstract class BaseModel
         return array(
             array("key" => "createdDate", "type" => BaseTypeEnum::STRING),
             array("key" => "modifiedDate", "type" => BaseTypeEnum::STRING),
-            array("key" => "isDeleted", "type" => BaseTypeEnum::STRING),
+            array("key" => "isDeleted", "type" => BaseTypeEnum::Boolean),
             array("key" => "ID", "type" => BaseTypeEnum::NUMBER)
         );
     }

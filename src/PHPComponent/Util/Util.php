@@ -244,7 +244,7 @@ function getAllApi($parameters, $class)
         $result = filter($result, function ($data, $key) use ($parameters) {
             foreach ($parameters["whereCondition"] as $whereCondition) {
                 foreach ($whereCondition as $key => $value) {
-                    if ($data->$key == $value)
+                    if (getDeepProp($data, $key) == $value)
                         return true;
                 }
             }
@@ -282,15 +282,20 @@ function generateBaseURL($arrayOfModel, $parameters)
             $instance->delete($parameters);
             return new Response(200, "Success", array());
         } else if ($parameters["ACTION"] === "search_" . $class::getSelfName()) {
-            $dataList = DB::getAll($class,  array(
-                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+            $dataList = DB::getAll_new($class,  array(
+                "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
+                "whereCondition" => isset($parameters["whereCondition"]) ? $parameters["whereCondition"] : null
             ));
             $dataList = search($dataList, isset($parameters["search"]) ? $parameters["search"] : null, 100);
             $matchedData = null;
             if(isset($parameters["search"])){
-                $matchedData = DB::getByID($class, $parameters["search"], array(
-                    "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
-                ));
+                try{
+                    $matchedData = DB::getByID($class, $parameters["search"], array(
+                        "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+                    ));
+                }catch(Exception $e){
+                    $matchedData = null;
+                }
             } 
             if($matchedData != null && !in_array($matchedData->ID, map($dataList, function($data, $key){
                 return $data->ID;
@@ -627,7 +632,7 @@ function isBetweenDates($fromDate, $toDate, $value)
 }
 
 function getLatestTable($table, $time, $field){
-    $list = DB::getAll($table);
+    $list = DB::getAll_new($table);
     $list = filter($list, function($data, $key) use($field, $time){
         if($data->{$field} == null)
            return false;
