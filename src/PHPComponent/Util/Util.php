@@ -667,11 +667,11 @@ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText
                 if ($percentage < $tempPercentage) $percentage = $tempPercentage;
             }
             if ($percentage > $percentageThreshold) {
-                $count += 1;
+                $count += 1 * $percentage;
                 $isAddToResult = true;
             }
         }
-        $data["rating"] = $count / sizeof($nameList);
+        $data["rating"] = $count;
         $data["count"] = $count;
         if ($isAddToResult)
             array_push($result, $data);
