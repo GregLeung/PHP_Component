@@ -68,13 +68,19 @@ abstract class BaseModel
                 case BaseTypeEnum::TO_MULTI:
                     $result = array();
                     if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        foreach($cachedList[$data["class"]] as $each){
-                            if(isset($each->{$data["field"]}) && $this->ID === $each->{$data["field"]}){
+                        if(!isset($GLOBALS['cachedMap']))
+                            $GLOBALS['cachedMap'] = array();
+                        if(isset($GLOBALS['cachedMap']) && !isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]])){
+                            $GLOBALS['cachedMap'][static::class . ".".$data["class"]] = array();
+                            foreach ($cachedList[$data["class"]] as $each) {
                                 $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]),  $options));
-                                array_push($result, $each);
+                                if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}])){
+                                    $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
+                                }
+                                array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
                             }
                         }
-                        $this->$key = $result;
+                        $this->$key =  (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:

@@ -576,7 +576,7 @@ function sortPaging($dataList, $sortProp, $sortOrder)
                     return ($sortOrder === "ascending") ? (json_encode($a) > json_encode($b)) : (json_encode($a) < json_encode($b));
                 return ($sortOrder === "ascending") ? ($a > $b) : ($a < $b);
             }
-            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp) : ($a->$sortProp < $b->$sortProp);
+            return ($sortOrder === "ascending") ? (strtolower($a->$sortProp) > strtolower($b->$sortProp)) : (strtolower($a->$sortProp) < strtolower($b->$sortProp));
         });
     } catch (Exception $e) {
         return $dataList;
