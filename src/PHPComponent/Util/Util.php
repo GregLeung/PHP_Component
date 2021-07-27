@@ -232,6 +232,7 @@ function getAllApi($parameters, $class)
     $cachedList = array();
     $result = array();
     $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
+    $excludedFields = isset($parameters["excludedFields"]) ? $parameters["excludedFields"] : array();
     foreach ($joinClassList as $joinClass) {
         $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
     }
@@ -252,7 +253,7 @@ function getAllApi($parameters, $class)
         });
     if (isset($parameters["advancedSearch"]))
         $result = advancedSearch($result, $parameters["advancedSearch"]);
-    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null);
+    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null, null, $excludedFields);
     return $result;
 }
 
@@ -523,12 +524,12 @@ function advancedSearch($data, $advancedSearch)
 function paging($dataList, $page, $pageSize, $search = "", $sort = array(
     "prop" => "ID",
     "order" => "descending",
-), $customSortFunction = null)
+), $customSortFunction = null, $excludedFields = array())
 {
     $totalRow = 0;
     if ($search != "" && $search != null)
-        $dataList = filter($dataList, function ($data, $index) use ($page, $pageSize, $search) {
-            return (checkSearch($search, $data));
+        $dataList = filter($dataList, function ($data, $index) use ($page, $pageSize, $search, $excludedFields) {
+            return (checkSearch($search, $data, $excludedFields));
         });
     $totalRow = count($dataList);
     if ($customSortFunction == null)
@@ -546,10 +547,12 @@ function checkPaging($index, $page, $pageSize)
     return ($index >= $page * $pageSize - $pageSize &&  $index < $page * $pageSize);
 }
 
-function checkSearch($search, $data)
+function checkSearch($search, $data, $excludedFields = array())
 {
     if ($search == "" || $search == null || is_array($search)) return true;
-    foreach ($data as $key => $value) { 
+    foreach ($data as $key => $value) {
+        if(in_array($key, $excludedFields))
+            continue;
         if (strpos(strtolower(json_encode($value)), strtolower($search)) !== false)
             return true;
     };
@@ -576,7 +579,7 @@ function sortPaging($dataList, $sortProp, $sortOrder)
                     return ($sortOrder === "ascending") ? (json_encode($a) > json_encode($b)) : (json_encode($a) < json_encode($b));
                 return ($sortOrder === "ascending") ? ($a > $b) : ($a < $b);
             }
-            return ($sortOrder === "ascending") ? (strtolower($a->$sortProp) > strtolower($b->$sortProp)) : (strtolower($a->$sortProp) < strtolower($b->$sortProp));
+            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp) : ($a->$sortProp < $b->$sortProp);
         });
     } catch (Exception $e) {
         return $dataList;
@@ -595,13 +598,13 @@ function checkClassInstanceExisted($class, $ID)
     // if(DB::getByID($class, $ID) == null) throw new Exception($class::getSelfName)
 }
 
-function search($dataList, $search, $limit)
+function search($dataList, $search, $limit, $excludedFields = array())
 {
     $dataList = array_reverse($dataList);
-    return filter($dataList, function ($data, $index, $size) use ($search, $limit) {
+    return filter($dataList, function ($data, $index, $size) use ($search, $limit, $excludedFields) {
         if ($size > $limit) return false;
         if ($search === null) return true;
-        return checkSearch($search, $data);
+        return checkSearch($search, $data, $excludedFields);
     });
 }
 
