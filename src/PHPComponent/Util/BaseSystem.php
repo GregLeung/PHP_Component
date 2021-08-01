@@ -21,7 +21,7 @@
             try{
                 apiKeyChecking();
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
-                $this->response = generateBaseURL($this->classList, $this->parameters);
+                $this->response = generateBaseURL($this->classList, $this->parameters, array("userClass" => $this->userClass));
                 $this->response = $function($this->config, $this->parameters, $this->response);
                 $this->loginAPI();
                 $this->extraAPI();

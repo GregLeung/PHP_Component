@@ -65,6 +65,10 @@ class BaseExcel {
         return $r;
     }
 
+    public function setColumnWidth($columnIndex,$value, $unit){
+        $this->sheet->getColumnDimension(self::convertNumberToLetter($columnIndex))->setWidth($value, $unit);
+    }
+
     function save($path){
         $writer = new Xlsx($this->spreadsheet);
         $writer->save($path);

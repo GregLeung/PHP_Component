@@ -80,7 +80,7 @@ abstract class BaseModel
                                 array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
                             }
                         }
-                        $this->$key =  (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();
+                        $this->$key = (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:
@@ -197,6 +197,9 @@ abstract class BaseModel
             }
         }
         return $isMasked;
+    }
+    public function getDeepProp($props){
+        return getDeepProp($this, $props);
     }
 }
 

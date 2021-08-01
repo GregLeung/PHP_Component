@@ -232,7 +232,6 @@ function getAllApi($parameters, $class)
     $cachedList = array();
     $result = array();
     $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
-    $excludedFields = isset($parameters["excludedFields"]) ? $parameters["excludedFields"] : array();
     foreach ($joinClassList as $joinClass) {
         $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
     }
@@ -253,11 +252,11 @@ function getAllApi($parameters, $class)
         });
     if (isset($parameters["advancedSearch"]))
         $result = advancedSearch($result, $parameters["advancedSearch"]);
-    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null, null, $excludedFields);
+    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null);
     return $result;
 }
 
-function generateBaseURL($arrayOfModel, $parameters)
+function generateBaseURL($arrayOfModel, $parameters, $options)
 {
     foreach ($arrayOfModel as $key => $class) {
         if ($parameters["ACTION"] === "get_" . $class::getSelfName() . "_all") {
@@ -313,6 +312,10 @@ function generateBaseURL($arrayOfModel, $parameters)
         }
         else if ($parameters["ACTION"] === "get_self") {
             return new Response(200, "Success", $GLOBALS['currentUser']);;
+        }else if($parameters["ACTION"] === "update_self"){
+                $parameters = array_merge($parameters, array("ID" => $GLOBALS['currentUser']->ID));
+                DB::update($parameters, $options["userClass"]);
+                return new Response(200, "Success", array());
         }
     }
 }
@@ -524,12 +527,12 @@ function advancedSearch($data, $advancedSearch)
 function paging($dataList, $page, $pageSize, $search = "", $sort = array(
     "prop" => "ID",
     "order" => "descending",
-), $customSortFunction = null, $excludedFields = array())
+), $customSortFunction = null)
 {
     $totalRow = 0;
     if ($search != "" && $search != null)
-        $dataList = filter($dataList, function ($data, $index) use ($page, $pageSize, $search, $excludedFields) {
-            return (checkSearch($search, $data, $excludedFields));
+        $dataList = filter($dataList, function ($data, $index) use ($page, $pageSize, $search) {
+            return (checkSearch($search, $data));
         });
     $totalRow = count($dataList);
     if ($customSortFunction == null)
@@ -547,12 +550,10 @@ function checkPaging($index, $page, $pageSize)
     return ($index >= $page * $pageSize - $pageSize &&  $index < $page * $pageSize);
 }
 
-function checkSearch($search, $data, $excludedFields = array())
+function checkSearch($search, $data)
 {
     if ($search == "" || $search == null || is_array($search)) return true;
-    foreach ($data as $key => $value) {
-        if(in_array($key, $excludedFields))
-            continue;
+    foreach ($data as $key => $value) { 
         if (strpos(strtolower(json_encode($value)), strtolower($search)) !== false)
             return true;
     };
@@ -579,7 +580,7 @@ function sortPaging($dataList, $sortProp, $sortOrder)
                     return ($sortOrder === "ascending") ? (json_encode($a) > json_encode($b)) : (json_encode($a) < json_encode($b));
                 return ($sortOrder === "ascending") ? ($a > $b) : ($a < $b);
             }
-            return ($sortOrder === "ascending") ? ($a->$sortProp > $b->$sortProp) : ($a->$sortProp < $b->$sortProp);
+            return ($sortOrder === "ascending") ? (strtolower($a->$sortProp) > strtolower($b->$sortProp)) : (strtolower($a->$sortProp) < strtolower($b->$sortProp));
         });
     } catch (Exception $e) {
         return $dataList;
@@ -598,13 +599,13 @@ function checkClassInstanceExisted($class, $ID)
     // if(DB::getByID($class, $ID) == null) throw new Exception($class::getSelfName)
 }
 
-function search($dataList, $search, $limit, $excludedFields = array())
+function search($dataList, $search, $limit)
 {
     $dataList = array_reverse($dataList);
-    return filter($dataList, function ($data, $index, $size) use ($search, $limit, $excludedFields) {
+    return filter($dataList, function ($data, $index, $size) use ($search, $limit) {
         if ($size > $limit) return false;
         if ($search === null) return true;
-        return checkSearch($search, $data, $excludedFields);
+        return checkSearch($search, $data);
     });
 }
 
