@@ -62,7 +62,7 @@ abstract class DB_mysql{
     {
         try{
             self::$_conn->where("ID", $ID);
-            $result = self::getRaw($class::getSelfName());
+            $result = self::getRaw($class::getSelfName(), $options);
             return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
         }catch(Exception $e){
             return null;
