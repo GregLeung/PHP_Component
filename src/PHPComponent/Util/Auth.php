@@ -24,11 +24,11 @@ class Auth{
     static function login($userClass, $loginName, $password, $expiredTime = 6048000)
     {
         $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
-        DB::$_conn->where("loginName", $loginName);
-        DB::$_conn->where("password", $password);
-        $result = DB::$_conn->get($userClass::getSelfName(), null, null);
+        // DB::$_conn->where("loginName", $loginName);
+        // DB::$_conn->where("password", $password);
+        // $result = DB::$_conn->get($userClass::getSelfName(), null, null);
         if (sizeof($result) == 0) throw new Exception('Please enter correct user name or password');
-        $user = new $userClass($result[0]);
+        $user = $result[0];
         $token = addToken($user, $expiredTime);
         return array("user" => $user, 'token' => $token);
     }

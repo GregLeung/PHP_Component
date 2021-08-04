@@ -261,7 +261,7 @@ abstract class DB_mssql{
         return $result;
     }
 
-    private static function isFullRight(){
+    private static function isFullRight($options){
         return (isset($options["fullRight"]) && $options["fullRight"] == true);
     }
 }
