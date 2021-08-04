@@ -1,9 +1,9 @@
 <?php
-abstract class DB{
+abstract class DB_mysql{
     public static $_conn = null;
-    static function getInstance($host, $username, $password, $db)
+    static function getInstance($config)
     {
-        if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => $host, 'username' => $username, 'password' => $password, 'db' => $db, 'charset' => 'utf8mb4'));
+        if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => $config->host, 'username' => $config->database_account, 'password' => $config->database_password, 'db' => $config->database_name, 'charset' => 'utf8mb4'));
     }
     static function rawQuery($sql)
     {
@@ -33,22 +33,22 @@ abstract class DB{
     {
         self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
         $result = self::$_conn->get($class::getSelfName(), null, null);
-        if(method_exists($class, "permissionGetHandling") && !isFullRight($options))
+        if(method_exists($class, "permissionGetHandling") && !self::isFullRight($options))
             $result = $class::permissionGetHandling($result);
         // self::insertLog("GET", $result);
         return $result;
     }
     static function getAll($class, $options = null){ // TO Be Deprecated
-        $modelList = rawDataListTModelList(self::getRaw($class), $class,  $options);
+        $modelList = self::rawDataListTModelList(self::getRaw($class), $class,  $options);
         return $modelList;
     }
 
-    static function getAll_new($class, $options = null){ 
+    static function getAll_new($class, $options = null){
         return getAllApi($options, $class);
     }
 
     static function getAllMap($class, $options = null){
-        $modelList = rawDataListTModelMap(self::getRaw($class), $class,  $options);
+        $modelList = self::rawDataListTModelMap(self::getRaw($class), $class,  $options);
         return $modelList;
     }
 
@@ -62,7 +62,7 @@ abstract class DB{
     {
         try{
             self::$_conn->where("ID", $ID);
-            $result = self::getRaw($class::getSelfName(), $options);
+            $result = self::getRaw($class::getSelfName());
             return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
         }catch(Exception $e){
             return null;
@@ -72,7 +72,7 @@ abstract class DB{
     static function getByWhereCondition($class, $whereConditionList,  $options = null)
     {
         self::addWhereConditionList($whereConditionList);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $options);
+        $modelList = self::rawDataListTModelList(self::getRaw($class), $class, $options);
         return $modelList;
     }
 
@@ -80,7 +80,7 @@ abstract class DB{
     {
         $options = isset($options) ? $options : array();
         self::$_conn->where($column, $value);
-        $modelList = rawDataListTModelList(self::getRaw($class), $class, $options);
+        $modelList = self::rawDataListTModelList(self::getRaw($class), $class, $options);
         return $modelList;
     }
 
@@ -140,7 +140,7 @@ abstract class DB{
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
         $typeList =  $class::getFieldsWithType();
-        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(addDefaultValue($parameters, $typeList), $typeList));
+        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         self::insertLog("INSERT", $parameters);
         return $id;
@@ -149,7 +149,7 @@ abstract class DB{
         self::addWhereConditionList($whereConditionList);
         $field_query = "";
         foreach ($dbObjectList as $dbObject) {
-            $field_query .= ", " . fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
+            $field_query .= ", " . self::fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
             self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
         }
         return parseValue(self::getRawJoin($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
@@ -179,72 +179,116 @@ abstract class DB{
             }
         }
     }
-}
 
-function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
-{
-    $sql = "";
-    $fields = filter($class::getFields(), function($field){
-        return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID && $field["type"] !== BaseTypeEnum::COMPUTED);
-    });
-    foreach ($fields as $value) {
-        $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
+    private static function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC){
+        $sql = "";
+        $fields = filter($class::getFields(), function($field){
+            return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID && $field["type"] !== BaseTypeEnum::COMPUTED);
+        });
+        foreach ($fields as $value) {
+            $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
+        }
+        return substr_replace($sql, " ", -2);
     }
-    return substr_replace($sql, " ", -2);
-}
-
-function addDefaultValue($parameters, $fieldTypeList){
-    foreach($fieldTypeList as $field){
-        if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] === null){
-            switch($field["type"]){
-                case BaseTypeEnum::ARRAY:
-                    $parameters[$field["key"]] = "[]";
-                break;
-                case BaseTypeEnum::OBJECT:
-                    $parameters[$field["key"]] = "{}";
-                break;
+    
+    private static function addDefaultValue($parameters, $fieldTypeList){
+        foreach($fieldTypeList as $field){
+            if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] === null){
+                switch($field["type"]){
+                    case BaseTypeEnum::ARRAY:
+                        $parameters[$field["key"]] = "[]";
+                    break;
+                    case BaseTypeEnum::OBJECT:
+                        $parameters[$field["key"]] = "{}";
+                    break;
+                }
             }
         }
+        return $parameters;
     }
-    return $parameters;
-}
 
-function convertParametersToString($parameters, $typeList)
-{
-    $result = array();
-    foreach ($parameters as $key => $value) {
-        if (is_array($value) && find($typeList, function($data)use($key){return $data["key"] === $key;})["type"] === BaseTypeEnum::INT_ARRAY){
-            $arrayValue = map($value, function($data){return intval($data);});
-            sort($arrayValue);
-            $result[$key] = json_encode($arrayValue);
+    private static function rawDataListTModelMap($rawDataList, $class, $options){
+        $modelMap = array();
+        foreach ($rawDataList as $data) {
+            $modelMap[$data["ID"]] = new $class($data, $options);
         }
-        else if (is_array($value))
-            $result[$key] = json_encode($value);
-        else
-            $result[$key] = $value;
+        return $modelMap;
     }
-    return $result;
-}
 
-
-function rawDataListTModelMap($rawDataList, $class, $options)
-{
-    $modelMap = array();
-    foreach ($rawDataList as $data) {
-        $modelMap[$data["ID"]] = new $class($data, $options);
+    private static function rawDataListTModelList($rawDataList, $class, $options){
+        $modelList = array();
+        foreach ($rawDataList as $data) {
+            array_push($modelList,  new $class($data, $options));
+        }
+        return $modelList;
     }
-    return $modelMap;
-}
 
-function rawDataListTModelList($rawDataList, $class, $options)
-{
-    $modelList = array();
-    foreach ($rawDataList as $data) {
-        array_push($modelList,  new $class($data, $options));
+    private static function isFullRight(){
+        return (isset($options["fullRight"]) && $options["fullRight"] == true);
     }
-    return $modelList;
+    
 }
 
-function isFullRight($options){
-    return (isset($options["fullRight"]) && $options["fullRight"] == true);
-}
+// function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
+// {
+//     $sql = "";
+//     $fields = filter($class::getFields(), function($field){
+//         return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID && $field["type"] !== BaseTypeEnum::COMPUTED);
+//     });
+//     foreach ($fields as $value) {
+//         $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
+//     }
+//     return substr_replace($sql, " ", -2);
+// }
+
+// function addDefaultValue($parameters, $fieldTypeList){
+//     foreach($fieldTypeList as $field){
+//         if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] === null){
+//             switch($field["type"]){
+//                 case BaseTypeEnum::ARRAY:
+//                     $parameters[$field["key"]] = "[]";
+//                 break;
+//                 case BaseTypeEnum::OBJECT:
+//                     $parameters[$field["key"]] = "{}";
+//                 break;
+//             }
+//         }
+//     }
+//     return $parameters;
+// }
+
+// function convertParametersToString($parameters, $typeList)
+// {
+//     $result = array();
+//     foreach ($parameters as $key => $value) {
+//         if (is_array($value) && find($typeList, function($data)use($key){return $data["key"] === $key;})["type"] === BaseTypeEnum::INT_ARRAY){
+//             $arrayValue = map($value, function($data){return intval($data);});
+//             sort($arrayValue);
+//             $result[$key] = json_encode($arrayValue);
+//         }
+//         else if (is_array($value))
+//             $result[$key] = json_encode($value);
+//         else
+//             $result[$key] = $value;
+//     }
+//     return $result;
+// }
+
+
+// function rawDataListTModelMap($rawDataList, $class, $options)
+// {
+//     $modelMap = array();
+//     foreach ($rawDataList as $data) {
+//         $modelMap[$data["ID"]] = new $class($data, $options);
+//     }
+//     return $modelMap;
+// }
+
+// function rawDataListTModelList($rawDataList, $class, $options)
+// {
+//     $modelList = array();
+//     foreach ($rawDataList as $data) {
+//         array_push($modelList,  new $class($data, $options));
+//     }
+//     return $modelList;
+// }

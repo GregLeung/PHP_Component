@@ -18,10 +18,7 @@ class Auth{
         $token = DB::getByColumn(Token::class, 'token', getRequestToken())[0];
         $token->expiredDate = time() + 6048000;
         DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), Token::class);
-        DB::$_conn->where("ID", $token->userID);
-        DB::$_conn->where($userClass::getSelfName() . "." . 'isDeleted', 0);
-        $result = DB::$_conn->get($userClass::getSelfName(), null, null);
-        return new $userClass($result[0]);
+        return DB::getByID($userClass, $token->userID, array("fullRight" => true));
     }
 
     static function login($userClass, $loginName, $password, $expiredTime = 6048000)
