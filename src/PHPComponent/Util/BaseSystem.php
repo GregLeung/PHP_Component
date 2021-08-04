@@ -9,7 +9,7 @@
             ini_set('memory_limit', '1024M');
             $this->config = readConfig();
             $this->classList = $classList;
-            DB::getInstance('localhost', $this->config->database_account, $this->config->database_password, $this->config->database_name );
+            DB::getInstance($this->config);
             setAllowOrigin(array("*"));
             init();
             $this->parameters = getParameter($_POST, $_GET);

@@ -16,7 +16,7 @@ abstract class DB_mysql{
             $value = substr($value, 0,60000) . '...';
         $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
         unset($data['ID']);
-        $id = self::$_conn->insert('Log', convertParametersToString($data, Log::getFieldsWithType()));
+        $id = self::$_conn->insert('Log', self::convertParametersToString($data, Log::getFieldsWithType()));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
     }
     static function getRawJoin($class, $cols = null) //TO BE Deprecated
@@ -105,7 +105,7 @@ abstract class DB_mysql{
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
-        $result = self::$_conn->update($class::getSelfName(), convertParametersToString($parameters, $class::getFieldsWithType()));
+        $result = self::$_conn->update($class::getSelfName(), self::convertParametersToString($parameters, $class::getFieldsWithType()));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
         self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     } 
@@ -140,7 +140,7 @@ abstract class DB_mysql{
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
         $typeList =  $class::getFieldsWithType();
-        $id = self::$_conn->insert($class::getSelfName(), convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList));
+        $id = self::$_conn->insert($class::getSelfName(), self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         self::insertLog("INSERT", $parameters);
         return $id;
@@ -221,6 +221,23 @@ abstract class DB_mysql{
             array_push($modelList,  new $class($data, $options));
         }
         return $modelList;
+    }
+
+    private static function convertParametersToString($parameters, $typeList)
+    {
+        $result = array();
+        foreach ($parameters as $key => $value) {
+            if (is_array($value) && find($typeList, function($data)use($key){return $data["key"] === $key;})["type"] === BaseTypeEnum::INT_ARRAY){
+                $arrayValue = map($value, function($data){return intval($data);});
+                sort($arrayValue);
+                $result[$key] = json_encode($arrayValue);
+            }
+            else if (is_array($value))
+                $result[$key] = json_encode($value);
+            else
+                $result[$key] = $value;
+        }
+        return $result;
     }
 
     private static function isFullRight(){
