@@ -3,7 +3,7 @@ abstract class DB_mysql{
     public static $_conn = null;
     static function getInstance($config)
     {
-        if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => $config->host, 'username' => $config->database_account, 'password' => $config->database_password, 'db' => $config->database_name, 'charset' => 'utf8mb4'));
+        if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => property_exists($config, "host") ? $config->host : "localhost", 'username' => $config->database_account, 'password' => $config->database_password, 'db' => $config->database_name, 'charset' => 'utf8mb4'));
     }
     static function rawQuery($sql)
     {
