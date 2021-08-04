@@ -14,10 +14,10 @@
     "autoload": {
         "files": [
             "src/PHPComponent/phpqrcode/qrlib.php",
+            "src/PHPComponent/Util/Util.php",
             "src/PHPComponent/DB/DB_mysql.php",
             "src/PHPComponent/DB/DB_mssql.php",
             "src/PHPComponent/DB/DB.php",
-            "src/PHPComponent/Util/Util.php",
             "src/PHPComponent/Util/Response.php",
             "src/PHPComponent/Util/BaseEmail.php",
             "src/PHPComponent/Util/Auth.php",
