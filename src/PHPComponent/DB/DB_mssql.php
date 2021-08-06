@@ -2,6 +2,7 @@
 abstract class DB_mssql{
     public static $_conn = null;
     public static $database = null;
+    public static $database_prefix = null;
     public static $stmt = null;
     public static $whereConditionString = "";
     static function getInstance($config) //DONE
@@ -13,6 +14,7 @@ abstract class DB_mssql{
                 self::$_conn = new PDO( "sqlsrv:server=$serverName;Database = $database", NULL, NULL);
                 self::$_conn->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );   
                 self::$database = $config->database_name;
+                self::$database_prefix = $config->database_prefix;
             }
         }  
         catch( PDOException $e ) {
@@ -38,7 +40,7 @@ abstract class DB_mssql{
     static function getRaw($class, $options = array())
     {        
         $result = array();
-        $query = "SELECT * FROM [" . self::$database . "].[" . self::$database ."].[" .$class::getSelfName() ."] WHERE isDeleted = 0 " ;
+        $query = "SELECT * FROM [" . self::$database . "].[" . self::$database_prefix ."].[" .$class::getSelfName() ."] WHERE isDeleted = 0 " ;
         $query .= self::$whereConditionString;
         self::$stmt = self::$_conn->query($query); 
         while ( $row = self::$stmt->fetch( PDO::FETCH_ASSOC ) ){   
@@ -108,7 +110,7 @@ abstract class DB_mssql{
     static function deleteRealByWhereCondition($class, $whereConditionList)
     {
         self::addWhereConditionList($whereConditionList);
-        $sql = "DELETE FROM [" . self::$database . "].[" . self::$database ."].[" .$class::getSelfName() ."] ";
+        $sql = "DELETE FROM [" . self::$database . "].[" . self::$database_prefix ."].[" .$class::getSelfName() ."] ";
         self::$whereConditionString = substr(self::$whereConditionString, 4);
         $sql .= "WHERE " . self::$whereConditionString;
         self::$stmt= self::$_conn->prepare($sql)->execute();
@@ -121,7 +123,7 @@ abstract class DB_mssql{
             throw new Exception("Role Permission Denied");
         $parameters = (array) $parameters;       
         $parameters = self::convertParametersToString($parameters, $class::getFieldsWithType());
-        $sql = "UPDATE [" . self::$database . "].[" . self::$database ."].[" .$class::getSelfName() ."] SET ";
+        $sql = "UPDATE [" . self::$database . "].[" . self::$database_prefix ."].[" .$class::getSelfName() ."] SET ";
         foreach ($parameters as $key => $value) {
             if($key == "ID")
                 continue;
@@ -166,7 +168,7 @@ abstract class DB_mssql{
             throw new Exception("Role Permission Denied");
         $typeList =  $class::getFieldsWithType();
         $parameters = self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList);
-        $sql = "INSERT INTO [" . self::$database . "].[" . self::$database ."].[" .$class::getSelfName() ."] (";
+        $sql = "INSERT INTO [" . self::$database . "].[" . self::$database_prefix ."].[" .$class::getSelfName() ."] (";
         foreach ($parameters as $key => $value) {
             $sql .= " " . $key . " ,";
         }
@@ -177,6 +179,8 @@ abstract class DB_mssql{
         }
         $sql = substr($sql, 0, -1);
         $sql .= ")";
+        writeCustomLog(json_encode($parameters));
+        writeCustomLog($sql);
         self::$stmt= self::$_conn->prepare($sql)->execute($parameters);
         return self::$_conn->lastInsertId();
     }
