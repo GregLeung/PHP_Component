@@ -9,6 +9,8 @@ abstract class BaseModel
     public $modifiedDate;
     public $ID;
     public $isDeleted;
+    public $createdUserID;
+    public $modifiedUserID;
 
     public static function isExisted($id)
     {
@@ -21,7 +23,9 @@ abstract class BaseModel
             array("key" => "createdDate", "type" => BaseTypeEnum::STRING),
             array("key" => "modifiedDate", "type" => BaseTypeEnum::STRING),
             array("key" => "isDeleted", "type" => BaseTypeEnum::Boolean),
-            array("key" => "ID", "type" => BaseTypeEnum::NUMBER)
+            array("key" => "ID", "type" => BaseTypeEnum::NUMBER),
+            array("key" => "createdUserID", "type" => BaseTypeEnum::NUMBER),
+            array("key" => "modifiedUserID", "type" => BaseTypeEnum::NUMBER),
         );
     }
 

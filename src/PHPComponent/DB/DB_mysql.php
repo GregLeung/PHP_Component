@@ -105,7 +105,7 @@ abstract class DB_mysql{
         self::$_conn->where("ID", $parameters["ID"]);
         $now = new DateTime();
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
-        $result = self::$_conn->update($class::getSelfName(), self::convertParametersToString($parameters, $class::getFieldsWithType()));
+        $result = self::$_conn->update($class::getSelfName(), array_merge(self::convertParametersToString($parameters, $class::getFieldsWithType()), array("modifiedUserID" => isset($GLOBALS['currentUser'])? $GLOBALS['currentUser']->ID: null )));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
         self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     } 
@@ -140,7 +140,7 @@ abstract class DB_mysql{
         if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
             throw new Exception("Role Permission Denied");
         $typeList =  $class::getFieldsWithType();
-        $id = self::$_conn->insert($class::getSelfName(), self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList));
+        $id = self::$_conn->insert($class::getSelfName(), array_merge(self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList), array("createdUserID" => isset($GLOBALS['currentUser'])? $GLOBALS['currentUser']->ID: null )));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
         self::insertLog("INSERT", $parameters);
         return $id;
@@ -245,67 +245,3 @@ abstract class DB_mysql{
     }
     
 }
-
-// function fieldQueryForSelect($class, $mode = BaseModel::PUBLIC)
-// {
-//     $sql = "";
-//     $fields = filter($class::getFields(), function($field){
-//         return ($field["type"] !== BaseTypeEnum::TO_MULTI && $field["type"] !== BaseTypeEnum::TO_SINGLE && $field["type"] !== BaseTypeEnum::ARRAY_OF_ID && $field["type"] !== BaseTypeEnum::COMPUTED);
-//     });
-//     foreach ($fields as $value) {
-//         $sql .=  $class::getSelfName() . "." . $value["key"] . " as '" . $class::getSelfName() . "." . $value["key"] . "', ";
-//     }
-//     return substr_replace($sql, " ", -2);
-// }
-
-// function addDefaultValue($parameters, $fieldTypeList){
-//     foreach($fieldTypeList as $field){
-//         if(!array_key_exists($field["key"],$parameters) || $parameters[$field["key"]] === null){
-//             switch($field["type"]){
-//                 case BaseTypeEnum::ARRAY:
-//                     $parameters[$field["key"]] = "[]";
-//                 break;
-//                 case BaseTypeEnum::OBJECT:
-//                     $parameters[$field["key"]] = "{}";
-//                 break;
-//             }
-//         }
-//     }
-//     return $parameters;
-// }
-
-// function convertParametersToString($parameters, $typeList)
-// {
-//     $result = array();
-//     foreach ($parameters as $key => $value) {
-//         if (is_array($value) && find($typeList, function($data)use($key){return $data["key"] === $key;})["type"] === BaseTypeEnum::INT_ARRAY){
-//             $arrayValue = map($value, function($data){return intval($data);});
-//             sort($arrayValue);
-//             $result[$key] = json_encode($arrayValue);
-//         }
-//         else if (is_array($value))
-//             $result[$key] = json_encode($value);
-//         else
-//             $result[$key] = $value;
-//     }
-//     return $result;
-// }
-
-
-// function rawDataListTModelMap($rawDataList, $class, $options)
-// {
-//     $modelMap = array();
-//     foreach ($rawDataList as $data) {
-//         $modelMap[$data["ID"]] = new $class($data, $options);
-//     }
-//     return $modelMap;
-// }
-
-// function rawDataListTModelList($rawDataList, $class, $options)
-// {
-//     $modelList = array();
-//     foreach ($rawDataList as $data) {
-//         array_push($modelList,  new $class($data, $options));
-//     }
-//     return $modelList;
-// }
