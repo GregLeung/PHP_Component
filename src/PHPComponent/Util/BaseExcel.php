@@ -69,6 +69,18 @@ class BaseExcel {
         $this->sheet->getColumnDimension(self::convertNumberToLetter($columnIndex))->setWidth($value, $unit);
     }
 
+    function setMultiColumnWidth($valueList){
+        foreach ($valueList as $column => $width) {
+            $this->sheet->getColumnDimension(self::convertNumberToLetter($column))->setWidth($width);
+        }
+    }
+
+    function setMultiRowHeight($valueList){
+        foreach ($valueList as $row => $height) {
+            $this->sheet->getRowDimension($row)->setRowHeight($height);
+        }
+    }
+
     function save($path){
         $writer = new Xlsx($this->spreadsheet);
         $writer->save($path);
