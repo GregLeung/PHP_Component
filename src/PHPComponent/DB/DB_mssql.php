@@ -32,10 +32,11 @@ abstract class DB_mssql{
         $value = json_encode($value);
         if(strlen( $value) > 60000)
             $value = substr($value, 0,60000) . '...';
-        $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
+        $data = array("action" => $action, 'createdUser' => (isset($GLOBALS['currentUser'])) ?  stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
         unset($data['ID']);
-        $id = self::$_conn->insert('Log', self::convertParametersToString($data, Log::getFieldsWithType()));
-        if ($id == false) throw new Exception(self::$_conn->getLastError());
+        // $id = self::$_conn->insert('Log', self::convertParametersToString($data, Log::getFieldsWithType()));
+        // if ($id == false) throw new Exception(self::$_conn->getLastError());
+        self::insertRaw($data, "Log");
     }
     static function getRaw($class, $options = array())
     {        
@@ -139,6 +140,7 @@ abstract class DB_mssql{
     {
         $parameters = filterParameterByClass($parameters, $class);
         self::updateRaw($parameters, $class);
+        self::insertLog("UPDATE", $parameters);
     }
     static function delete($ID, $class){
         self::updateRaw(array("ID"=>$ID, "isDeleted"=>1),$class);
@@ -153,6 +155,7 @@ abstract class DB_mssql{
 
     static function insert($parameters, $class){
         $parameters = filterParameterByClass($parameters, $class);
+        self::insertLog("INSERT", $parameters);
         return self::insertRaw($parameters, $class);
     }
     static function isWhereConditionExisted($class, $whereConditionList){
@@ -168,6 +171,7 @@ abstract class DB_mssql{
             throw new Exception("Role Permission Denied");
         $typeList =  $class::getFieldsWithType();
         $parameters = self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList);
+        $parameters["createdUserID"] = (isset($GLOBALS['currentUser'])) ?  $GLOBALS['currentUser']->ID : "";
         $sql = "INSERT INTO [" . self::$database . "].[" . self::$database_prefix ."].[" .$class::getSelfName() ."] (";
         foreach ($parameters as $key => $value) {
             $sql .= " " . $key . " ,";
@@ -179,7 +183,6 @@ abstract class DB_mssql{
         }
         $sql = substr($sql, 0, -1);
         $sql .= ")";
-        writeCustomLog(json_encode($parameters));
         writeCustomLog($sql);
         self::$stmt= self::$_conn->prepare($sql)->execute($parameters);
         return self::$_conn->lastInsertId();
