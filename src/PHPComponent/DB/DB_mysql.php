@@ -17,7 +17,7 @@ abstract class DB_mysql{
         $data = array("action" => $action, 'user' => (isset($GLOBALS['currentUser'])) ? stdClassToArray($GLOBALS['currentUser']) : "",  "header" => getallheaders(), "server" => $_SERVER, "parameter" => getParameter($_POST, $_GET), 'data' => $value);
         unset($data['ID']);
         $id = self::$_conn->insert('Log', self::convertParametersToString($data, Log::getFieldsWithType()));
-        if ($id == false) throw new Exception(self::$_conn->getLastError());
+        // if ($id == false) throw new Exception(self::$_conn->getLastError());
     }
     static function getRawJoin($class, $cols = null) //TO BE Deprecated
     {
@@ -149,7 +149,7 @@ abstract class DB_mysql{
         self::addWhereConditionList($whereConditionList);
         $field_query = "";
         foreach ($dbObjectList as $dbObject) {
-            $field_query .= ", " . self::fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::PUBLIC);
+            $field_query .= ", " . self::fieldQueryForSelect($dbObject["db"]::getSelfName(), $dbObject["mode"] || BaseModel::SYSTEM);
             self::$_conn->join($dbObject["db"]::getSelfName() . " " . $dbObject["db"]::getSelfName(), $dbObject["joinQuery"], "LEFT");
         }
         return parseValue(self::getRawJoin($db::getSelfName(), $db::getSelfName() . ".* " .  $field_query));
