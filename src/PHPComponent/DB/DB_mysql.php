@@ -61,16 +61,20 @@ abstract class DB_mysql{
     static function getByID($class, $ID, $options = null)
     {
         try{
-            $result = static::getAll_new($class, $options);
-            return find($result, function($data, $key) use($ID){
-                return $data->ID == $ID;
-            });
-            // self::$_conn->where("ID", $ID);
-            // $result = self::getRaw($class::getSelfName(), $options);
-            // return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
-        }catch(Exception $e){
-            return null;
-        }
+            self::$_conn->where("ID", $ID);
+            $item = self::getRaw($class::getSelfName(), $options);
+            $item = (sizeof($item) > 0) ? new $class($item[0], $options) : null;
+            $cachedList = array();
+            $result = array();
+            $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
+            foreach ($joinClassList as $joinClass) {
+                $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
+            }
+            $item->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(), "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array()));
+            return $item;
+            }catch(Exception $e){
+                return null;
+            }
     }
 
     static function getByWhereCondition($class, $whereConditionList,  $options = null)
