@@ -424,6 +424,15 @@ function find($array, $function)
     return null;
 }
 
+function findIndex($array, $function)
+{
+    foreach ($array as $key => $data) {
+        if ($function($data, $key))
+            return $key;
+    }
+    return null;
+}
+
 function getCurrentUser($userClass)
 {
     $user = Auth::getLoginUser($userClass);

@@ -61,9 +61,13 @@ abstract class DB_mysql{
     static function getByID($class, $ID, $options = null)
     {
         try{
-            self::$_conn->where("ID", $ID);
-            $result = self::getRaw($class::getSelfName(), $options);
-            return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
+            $result = static::getAll_new($class, $options);
+            return find($result, function($data, $key) use($ID){
+                return $data->ID == $ID;
+            });
+            // self::$_conn->where("ID", $ID);
+            // $result = self::getRaw($class::getSelfName(), $options);
+            // return (sizeof($result) > 0) ? new $class($result[0], $options) : null;
         }catch(Exception $e){
             return null;
         }
