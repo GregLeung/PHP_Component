@@ -21,14 +21,12 @@ class Auth{
         return DB::getByID($userClass, $token->userID, array("fullRight" => true));
     }
 
-    static function login($userClass, $loginName, $password, $expiredTime = 6048000)
+    static function login($userClass, $loginName, $password, $expiredTime = 6048000, $callback = null)
     {
         $result = DB::getByWhereCondition($userClass, array("loginName" => $loginName, "password" => $password));
-        // DB::$_conn->where("loginName", $loginName);
-        // DB::$_conn->where("password", $password);
-        // $result = DB::$_conn->get($userClass::getSelfName(), null, null);
         if (sizeof($result) == 0) throw new Exception('Please enter correct user name or password');
         $user = $result[0];
+        if($callback != null) $callback($user);
         $token = addToken($user, $expiredTime);
         return array("user" => $user, 'token' => $token);
     }
