@@ -24,6 +24,7 @@
             "src/PHPComponent/Util/BaseException.php",
             "src/PHPComponent/Util/BaseSystem.php",
             "src/PHPComponent/Util/BaseExcel.php",
+            "src/PHPComponent/Util/BaseLog.php",
             "src/PHPComponent/Model/BaseModel.php",
             "src/PHPComponent/Model/UserAuth.php",
             "src/PHPComponent/Model/LoginUser.php",

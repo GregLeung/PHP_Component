@@ -284,14 +284,16 @@ function generateBaseURL($arrayOfModel, $parameters, $options)
         } else if ($parameters["ACTION"] === "search_" . $class::getSelfName()) {
             $dataList = DB::getAll_new($class,  array(
                 "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
-                "whereCondition" => isset($parameters["whereCondition"]) ? $parameters["whereCondition"] : null
+                "whereCondition" => isset($parameters["whereCondition"]) ? $parameters["whereCondition"] : null,
             ));
             $dataList = search($dataList, isset($parameters["search"]) ? $parameters["search"] : null, 100);
             $matchedData = null;
             if(isset($parameters["search"])){
                 try{
                     $matchedData = DB::getByID($class, $parameters["search"], array(
-                        "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array()
+                        "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(),
+                        "computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(),
+                        "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array(),
                     ));
                 }catch(Exception $e){
                     $matchedData = null;
