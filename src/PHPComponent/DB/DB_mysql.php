@@ -64,15 +64,14 @@ abstract class DB_mysql{
             self::$_conn->where("ID", $ID);
             $item = self::getRaw($class::getSelfName(), $options);
             $item = (sizeof($item) > 0) ? new $class($item[0], $options) : null;
-            if($item != null){
-                $cachedList = array();
-                $result = array();
-                $joinClassList = isset($parameters["joinClass"]) ? $parameters["joinClass"] : array();
-                foreach ($joinClassList as $joinClass) {
-                    $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
-                }
-                $item->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(), "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array()));
-            }
+            // if($item != null){
+            //     $cachedList = array();
+            //     $joinClassList = isset($options["joinClass"]) ? $options["joinClass"] : array();
+            //     foreach ($joinClassList as $joinClass) {
+            //         $cachedList[$joinClass::getSelfName()] = DB::getAllMap($joinClass);
+            //     }
+            //     $item->customAssignField($cachedList, array("computed" => isset($options["computed"]) ? $options["computed"] : array(), "joinClass" => isset($options["joinClass"]) ? $options["joinClass"] : array(), "mask" => isset($options["mask"]) ? $options["mask"] : array()));
+            // }
             return $item;
             }catch(Exception $e){
                 return null;

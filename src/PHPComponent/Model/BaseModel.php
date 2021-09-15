@@ -70,7 +70,6 @@ abstract class BaseModel
             };
             switch ($data['type']) {
                 case BaseTypeEnum::TO_MULTI:
-                    $result = array();
                     if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
                         if(!isset($GLOBALS['cachedMap']))
                             $GLOBALS['cachedMap'] = array();
@@ -78,10 +77,17 @@ abstract class BaseModel
                             $GLOBALS['cachedMap'][static::class . ".".$data["class"]] = array();
                             foreach ($cachedList[$data["class"]] as $each) {
                                 $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]),  $options));
-                                if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}])){
-                                    $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
+                                if(is_array($each->{$data["field"]})){
+                                    if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID]))
+                                        $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] = array();
+                                    if(in_array($this->ID, $each->{$data["field"]}))
+                                        array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID], $each);
                                 }
-                                array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
+                                else{
+                                    if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}]))
+                                        $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
+                                    array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
+                                }
                             }
                         }
                         $this->$key = (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();
@@ -139,8 +145,16 @@ abstract class BaseModel
                     $this->$key = (isJSONString($object[$data['key']])) ? json_decode($object[$data['key']]) : array();
                     break;
                 case BaseTypeEnum::TO_MULTI:
-                    if (isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
-                        $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options,));
+                    if (isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])){
+                        $field = find($data["class"]::getFields(), function($each, $key) use($data){
+                            return $each["key"] == $data["field"];
+                        });
+                        if($field["type"] == BaseTypeEnum::INT_ARRAY)
+                            $this->$key = filter(DB::getAll_new($data["class"], static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options,)), function($each, $key) use($data){
+                                return in_array($this->ID, $each->{$data["field"]});
+                            });
+                        else
+                            $this->$key = DB::getByColumn($data["class"], $data["field"], $this->ID,  static::mergeOptions($key, array_search($data["class"], $options["joinClass"]), $options,));
                     }
                     break;
                 case BaseTypeEnum::TO_SINGLE:

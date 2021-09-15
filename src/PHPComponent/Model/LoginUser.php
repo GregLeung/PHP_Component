@@ -20,4 +20,8 @@ abstract class LoginUser extends BaseModel{
             array("key" => "password", "type"=> BaseTypeEnum::STRING),
         );
     }
+
+    public function getName(){
+        return $this->loginName;
+    }
 }
