@@ -70,6 +70,7 @@ abstract class BaseModel
             };
             switch ($data['type']) {
                 case BaseTypeEnum::TO_MULTI:
+                    $result = array();
                     if (isset($cachedList[$data["class"]]) && isset($options["joinClass"]) && in_array($data["class"], $options["joinClass"])) {
                         if(!isset($GLOBALS['cachedMap']))
                             $GLOBALS['cachedMap'] = array();
@@ -77,17 +78,10 @@ abstract class BaseModel
                             $GLOBALS['cachedMap'][static::class . ".".$data["class"]] = array();
                             foreach ($cachedList[$data["class"]] as $each) {
                                 $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]),  $options));
-                                if(is_array($each->{$data["field"]})){
-                                    if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID]))
-                                        $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] = array();
-                                    if(in_array($this->ID, $each->{$data["field"]}))
-                                        array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID], $each);
+                                if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}])){
+                                    $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
                                 }
-                                else{
-                                    if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}]))
-                                        $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
-                                    array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
-                                }
+                                array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
                             }
                         }
                         $this->$key = (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();

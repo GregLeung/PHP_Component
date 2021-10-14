@@ -240,13 +240,61 @@ function getAllApi($parameters, $class)
         $each->customAssignField($cachedList, array("computed" => isset($parameters["computed"]) ? $parameters["computed"] : array(), "joinClass" => isset($parameters["joinClass"]) ? $parameters["joinClass"] : array(), "mask" => isset($parameters["mask"]) ? $parameters["mask"] : array()));
         array_push($result, $each);
     }
-    if (isset($parameters["whereCondition"]))
+    if (isset($parameters["whereCondition"])) //DEPRECATED
         $result = filter($result, function ($data, $key) use ($parameters) {
             foreach ($parameters["whereCondition"] as $whereCondition) {
                 foreach ($whereCondition as $key => $value) {
                     if (getDeepProp($data, $key) == $value)
                         return true;
                 }
+            }
+            return false;
+        });
+    if (isset($parameters["whereOperation"]))
+        $result = filter($result, function ($data, $key) use ($parameters) {
+            foreach ($parameters["whereOperation"] as $whereOperation) {
+                // foreach ($whereOperation as $key => $value) {
+                    switch($whereOperation["type"]){
+                        case "EQUAL":
+                            return getDeepProp($data, $whereOperation["key"]) == $whereOperation["value"];
+                        case "NOT_EQUAL":
+                            return getDeepProp($data, $whereOperation["key"]) != $whereOperation["value"];
+                        case "MORE":
+                            return getDeepProp($data, $whereOperation["key"]) > $whereOperation["value"];
+                        case "LESS":
+                            return getDeepProp($data, $whereOperation["key"]) < $whereOperation["value"];
+                        case "MORE_OR_EQUAL":
+                            return getDeepProp($data, $whereOperation["key"]) >= $whereOperation["value"];
+                        case "LESS_OR_EQUAL":
+                            return getDeepProp($data, $whereOperation["key"]) <= $whereOperation["value"];
+                        case "LENGTH_EQUAL":
+                            return sizeof(getDeepProp($data, $whereOperation["key"])) == $whereOperation["value"];
+                        case "LENGTH_MORE":
+                            return sizeof(getDeepProp($data, $whereOperation["key"])) > $whereOperation["value"];
+                        case "LENGTH_LESS":
+                            return sizeof(getDeepProp($data, $whereOperation["key"])) < $whereOperation["value"];
+                        case "LENGTH_MORE_OR_EQUAL":
+                            return sizeof(getDeepProp($data, $whereOperation["key"])) >= $whereOperation["value"];
+                        case "LENGTH_LESS_OR_EQUAL":
+                            return sizeof(getDeepProp($data, $whereOperation["key"])) <= $whereOperation["value"];
+                        case "BETWEEN_TIME_RANGE":
+                            $value = getDeepProp($data, $whereOperation["key"]);
+                            if($value == null)
+                                return false;
+                            $startTime = strtotime($whereOperation["value"][0]);
+                            $endTime = strtotime($whereOperation["value"][1]);
+                            return strtotime($value) >= $startTime && strtotime($value) <= $endTime;
+                        case "BETWEEN_TIME_RANGE_ARRAY":
+                            $valueList = getDeepProp($data, $whereOperation["key"]);
+                            $startTime = strtotime($whereOperation["value"][0]);
+                            $endTime = strtotime($whereOperation["value"][1]);
+                            foreach($valueList as $value){
+                                if(strtotime($value) >= $startTime && strtotime($value) <= $endTime)
+                                    return true;
+                            }
+                            return false;
+                    }
+                // }
             }
             return false;
         });
