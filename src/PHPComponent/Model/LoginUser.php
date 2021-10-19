@@ -2,6 +2,7 @@
 abstract class LoginUser extends BaseModel{
     public $password;
     public $loginName; 
+    public $username; 
     public $type; 
 
     static function getCurrentType(){
@@ -18,6 +19,7 @@ abstract class LoginUser extends BaseModel{
             array("key" => "loginName", "type"=> BaseTypeEnum::STRING),
             array("key" => "type", "type"=> BaseTypeEnum::ARRAY),
             array("key" => "password", "type"=> BaseTypeEnum::STRING),
+            array("key" => "username", "type"=> BaseTypeEnum::STRING),
         );
     }
 
