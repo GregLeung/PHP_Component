@@ -293,6 +293,18 @@ function getAllApi($parameters, $class)
                                     return true;
                             }
                             return false;
+                        case "ARRAY_INCLUDES_ARRAY":
+                            $valueList = getDeepProp($data, $whereOperation["key"]);
+                            foreach($valueList as $value){
+                                foreach($whereOperation["value"] as $whereOperationValue){
+                                    if($whereOperation["value"] == $value)
+                                        return true;
+                                }
+                            }
+                            return false;
+                        case "ARRAY_INCLUDES_VALUE":
+                            $value = getDeepProp($data, $whereOperation["key"]);
+                            return in_array($value, $whereOperation["value"]);
                     }
                 // }
             }
@@ -459,7 +471,8 @@ function filter($array, $function)
     foreach ($array as $key => $data) {
         $size = sizeof($result);
         if ($function($data, $key, $size)) {
-            array_push($result, $data);
+            // array_push($result, $data);
+            $result[] = $data;
         }
     }
     return $result;
@@ -554,6 +567,8 @@ function advancedSearch($data, $advancedSearch)
                 });
                 break;
             case "MULTI-SELECTION-SELECTOR":
+                writeCustomLog("AAA");
+                writeCustomLog(json_encode($searchFilterSet["value"]));
                 $data = filter($data, function ($data, $key) use ($column, $searchFilterSet) {
                     foreach ($searchFilterSet["value"] as $value) {
                         $dataValue = getDeepProp($data, $column);

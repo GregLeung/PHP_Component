@@ -32,6 +32,8 @@ abstract class DB_mysql{
     static function getRaw($class, $options = array())
     {
         self::$_conn->where($class::getSelfName() . "." .'isDeleted', 0);
+        if(method_exists($class, "sqlQueryModification") && !self::isFullRight($options))
+            self::$_conn = $class::sqlQueryModification(self::$_conn);
         $result = self::$_conn->get($class::getSelfName(), null, null);
         if(method_exists($class, "permissionGetHandling") && !self::isFullRight($options))
             $result = $class::permissionGetHandling($result);
