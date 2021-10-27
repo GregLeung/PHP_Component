@@ -37,6 +37,7 @@
                 else $this->response = new Response(-1, "Failed", $exception->getMessage());
             }
             echo $this->response->send_response();
+            DB::close_mysqli_conn();
         }
         private function loginAPI(){
             switch ($this->parameters["ACTION"]) {
@@ -68,6 +69,19 @@
                         $this->response = new Response(200, "Success", $fileName);
                     else
                         throw new Exception("Create File Error");
+                    break;
+                case "get_table_list":
+                    $this->response = new Response(200, "Success", DB::getTableList());
+                    break;
+                case "create_table":
+                    if(!isset($parameters["tableName"]))
+                        throw new Exception("tableName Cannot Be Empty");
+                    if(!isset($parameters["columnList"]))
+                        throw new Exception("columnList Cannot Be Empty");
+                    DB::createTable($parameters["tableName"], map($parameters["columnList"], function($column){
+                        return new DB_Column($column["name"], $column["type"],$column["isNullAble"],$column["defaultValue"]);
+                    }));
+                    $this->response = new Response(200, "Success", array());
                     break;
             }
         }

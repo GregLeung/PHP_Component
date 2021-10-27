@@ -1,14 +1,85 @@
 <?php
 abstract class DB_mysql{
     public static $_conn = null;
+    public static $_mysqli_conn = null;
+    public static $_config = null;
     static function getInstance($config)
     {
         if (self::$_conn === null) self::$_conn = new MysqliDb(array('host' => property_exists($config, "host") ? $config->host : "localhost", 'username' => $config->database_account, 'password' => $config->database_password, 'db' => $config->database_name, 'charset' => 'utf8mb4'));
+        self::$_config = $config;
+    }
+    static function init_mysqli_conn(){
+        self::$_mysqli_conn = new mysqli(property_exists(self::$_config, "host") ? self::$_config->host : "localhost",  self::$_config->database_account, self::$_config->database_password, self::$_config->database_name);
+    }
+    static function close_mysqli_conn(){
+        if (self::$_mysqli_conn !== null) self::$_mysqli_conn->close();
     }
     static function rawQuery($sql)
     {
-        return self::$_conn->rawQuery($sql);
+        if (self::$_mysqli_conn === null) self::init_mysqli_conn();
+        $result = self::$_mysqli_conn->query($sql);
+        if($result == false)
+            throw new Exception(self::$_mysqli_conn->error);
+        return $result;
     }
+
+    static function getTableList()
+    {
+        if (self::$_mysqli_conn === null) self::init_mysqli_conn();
+        $tableList = [];
+        $result = self::$_mysqli_conn->query("SHOW TABLES FROM `" . self::$_config->database_name . "`");
+        while ($row = $result->fetch_row()) {
+            if($row[0] == "Log" || $row[0] == "Token" || $row[0] == "UserAuth")
+                $tableList[] = array("name" => $row[0], "type" => "SYSTEM");
+            else
+                $tableList[] = array("name" => $row[0], "type" => "GENERAL");
+        }
+        return $tableList;
+    }
+
+    static function getTableStructure($tableName)
+    {
+        if (self::$_mysqli_conn === null) self::init_mysqli_conn();
+        $tableList = [];
+        $result = self::$_mysqli_conn->query("select * from INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '" . self::$_config->database_name . "' AND Table_Name = '" . $tableName . "'");
+        while ($row = $result->fetch_row()) {
+            $isNullAble = $row[6] == "YES" ? true: false;
+            $length = $row[8];
+            $type = null;
+            $rawType = $row[7];
+            $defaultValue = $row[5];
+            if($defaultValue == "''" || $defaultValue == '""')
+                $defaultValue = "";
+            switch($rawType){
+                case "varchar":
+                    if($length == 1024)
+                        $type = DB_ColumnType::VARCHAR;
+                    else
+                        $type = DB_ColumnType::ARRAY;
+                    break;
+                case "int":
+                    $type = DB_ColumnType::INT;
+                    break;
+                case "decimal":
+                    $type = DB_ColumnType::DECIMAL;
+                    break;
+                case "tinyint":
+                    $type = DB_ColumnType::BOOLEAN;
+                    break;
+                case "datetime":
+                    $type = DB_ColumnType::DATE;
+                    break;
+            }
+            $tableList[] = array("name" => $row[3], "defaultValue" => $defaultValue, "isNullAble" => $isNullAble, "type" => $type);
+        }
+        return $tableList;
+    }
+
+    static function createTable($tableName, $columnList)
+    {
+        return DB::rawQuery(DB_Controller::createTable($tableName, $columnList));
+    }
+
     static function insertLog($action, $value = "")
     {
         $value = json_encode($value);

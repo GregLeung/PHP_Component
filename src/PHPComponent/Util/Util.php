@@ -73,6 +73,10 @@ function readConfig()
 {
     return json_decode(file_get_contents("./config.json"));
 }
+function readSystemConfig()
+{
+    return json_decode(file_get_contents("./system_config.json"));
+}
 function getFile($filePath)
 {
     header('Content-Type: application/octet-stream');
