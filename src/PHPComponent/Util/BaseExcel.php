@@ -109,6 +109,10 @@ class BaseExcel {
         $this->sheet->getDefaultStyle()->applyFromArray($style);
     }
 
+    function setWrapText(){
+        $this->sheet->getStyle('A1:Z999')->getAlignment()->setWrapText(true); 
+    }
+
     function save($path){
         $writer = new Xlsx($this->spreadsheet);
         $writer->save($path);
