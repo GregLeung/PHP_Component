@@ -8,6 +8,7 @@ class BaseLog extends BaseModel{
     public $oldValueLabel;
     public $newValueLabel;
     public $sourceLabel;
+    public $action;
 
     public static function getFields(){
         return array(
@@ -19,6 +20,7 @@ class BaseLog extends BaseModel{
             array("key" => "oldValueLabel", "type"=> BaseTypeEnum::STRING),
             array("key" => "newValueLabel", "type"=> BaseTypeEnum::STRING),
             array("key" => "updatedFromLabel", "type"=> BaseTypeEnum::STRING),
+            array("key" => "action", "type"=> BaseTypeEnum::STRING),
         );
     }
 

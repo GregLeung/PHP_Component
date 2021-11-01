@@ -14,7 +14,6 @@
             $sql .= "PRIMARY KEY (`ID`) ";
             $sql .= ") ";
             $sql .= "ENGINE=InnoDB DEFAULT CHARSET=utf8";
-            writeCustomLog($sql);
             return $sql;
         }
     }

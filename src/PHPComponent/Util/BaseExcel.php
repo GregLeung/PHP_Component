@@ -109,8 +109,11 @@ class BaseExcel {
         $this->sheet->getDefaultStyle()->applyFromArray($style);
     }
 
-    function setWrapText(){
-        $this->sheet->getStyle('A1:Z999')->getAlignment()->setWrapText(true); 
+    function setWrapText($rowNumber = null){
+        if($rowNumber == null)
+            $this->sheet->getStyle('A1:Z9999')->getAlignment()->setWrapText(true); 
+        else
+            $this->sheet->getStyle('A1:Z' . $rowNumber)->getAlignment()->setWrapText(true); 
     }
 
     function save($path){
