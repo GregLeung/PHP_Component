@@ -7,6 +7,14 @@ class BaseExcel {
     private $sheet = null;
     private $spreadsheet = null;
     private $previousSetRowPosition = array(1,1);
+
+    const FORMAT_GENERAL = 'General';
+    const FORMAT_TEXT = '@';
+    const FORMAT_NUMBER = '0';
+    const FORMAT_NUMBER_00 = '0.00';
+    const FORMAT_NUMBER_00_COMMA = '#,##0.00';
+    const FORMAT_PERCENTAGE = '0%';
+    const FORMAT_PERCENTAGE_00 = '0.00%';
     
     function __construct() {
         $this->spreadsheet = new Spreadsheet();
@@ -16,6 +24,22 @@ class BaseExcel {
     function setCellValue($cell, $value){
         $this->sheet->setCellValue(self::convertNumberToLetter($cell[0]) . strval($cell[1]), $value);
         $this->currentPosition = $cell;
+    }
+
+    function setCellFormat($cell, $formatCode){
+        if($formatCode != null){
+            $this->sheet->getStyle(self::convertNumberToLetter($cell[0]) . strval($cell[1]))
+                ->getNumberFormat()
+                ->setFormatCode($formatCode);
+            $this->currentPosition = $cell;
+        }
+    }
+
+    function checkOptionValid($valueList, $options){
+        if($options != null){
+            if(isset($options["formatList"]) && sizeof($options["formatList"]) != sizeof($valueList))
+                throw new Exception("BaseExcel::FORMAT_LENGTH_ERROR");
+        }
     }
 
     function rawSetCellValue($cell, $value){
