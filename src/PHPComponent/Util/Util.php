@@ -254,10 +254,61 @@ function getAllApi($parameters, $class)
             }
             return false;
         });
-    if (isset($parameters["whereOperation"]))
-        $result = filter($result, function ($data, $key) use ($parameters) {
+    if (isset($parameters["whereOperation"])){
+        $parameters["whereOperationType"] = isset($parameters["whereOperationType"]) ? $parameters["whereOperationType"] : "OR";
+        if($parameters["whereOperationType"] == "OR")
+            $result = filter($result, function ($data, $key) use ($parameters) {
+                foreach ($parameters["whereOperation"] as $whereOperation) {
+                        switch($whereOperation["type"]){
+                            case "EQUAL":
+                                return getDeepProp($data, $whereOperation["key"]) == $whereOperation["value"];
+                            case "NOT_EQUAL":
+                                return getDeepProp($data, $whereOperation["key"]) != $whereOperation["value"];
+                            case "MORE":
+                                return getDeepProp($data, $whereOperation["key"]) > $whereOperation["value"];
+                            case "LESS":
+                                return getDeepProp($data, $whereOperation["key"]) < $whereOperation["value"];
+                            case "MORE_OR_EQUAL":
+                                return getDeepProp($data, $whereOperation["key"]) >= $whereOperation["value"];
+                            case "LESS_OR_EQUAL":
+                                return getDeepProp($data, $whereOperation["key"]) <= $whereOperation["value"];
+                            case "LENGTH_EQUAL":
+                                return sizeof(getDeepProp($data, $whereOperation["key"])) == $whereOperation["value"];
+                            case "LENGTH_MORE":
+                                return sizeof(getDeepProp($data, $whereOperation["key"])) > $whereOperation["value"];
+                            case "LENGTH_LESS":
+                                return sizeof(getDeepProp($data, $whereOperation["key"])) < $whereOperation["value"];
+                            case "LENGTH_MORE_OR_EQUAL":
+                                return sizeof(getDeepProp($data, $whereOperation["key"])) >= $whereOperation["value"];
+                            case "LENGTH_LESS_OR_EQUAL":
+                                return sizeof(getDeepProp($data, $whereOperation["key"])) <= $whereOperation["value"];
+                            case "BETWEEN_TIME_RANGE":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                if($value == null)
+                                    return false;
+                                $startTime = strtotime($whereOperation["value"][0]);
+                                $endTime = strtotime($whereOperation["value"][1]);
+                                return strtotime($value) >= $startTime && strtotime($value) <= $endTime;
+                            case "ARRAY_INCLUDES_ARRAY":
+                                $valueList = getDeepProp($data, $whereOperation["key"]);
+                                foreach($valueList as $value){
+                                    foreach($whereOperation["value"] as $whereOperationValue){
+                                        if($whereOperation["value"] == $value)
+                                            return true;
+                                    }
+                                }
+                                return false;
+                            case "ARRAY_INCLUDES_VALUE":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                return in_array($value, $whereOperation["value"]);
+                        }
+                    // }
+                }
+                return false;
+            });
+        else
             foreach ($parameters["whereOperation"] as $whereOperation) {
-                // foreach ($whereOperation as $key => $value) {
+                $result = filter($result, function($data, $key) use($whereOperation){
                     switch($whereOperation["type"]){
                         case "EQUAL":
                             return getDeepProp($data, $whereOperation["key"]) == $whereOperation["value"];
@@ -288,15 +339,6 @@ function getAllApi($parameters, $class)
                             $startTime = strtotime($whereOperation["value"][0]);
                             $endTime = strtotime($whereOperation["value"][1]);
                             return strtotime($value) >= $startTime && strtotime($value) <= $endTime;
-                        case "BETWEEN_TIME_RANGE_ARRAY":
-                            $valueList = getDeepProp($data, $whereOperation["key"]);
-                            $startTime = strtotime($whereOperation["value"][0]);
-                            $endTime = strtotime($whereOperation["value"][1]);
-                            foreach($valueList as $value){
-                                if(strtotime($value) >= $startTime && strtotime($value) <= $endTime)
-                                    return true;
-                            }
-                            return false;
                         case "ARRAY_INCLUDES_ARRAY":
                             $valueList = getDeepProp($data, $whereOperation["key"]);
                             foreach($valueList as $value){
@@ -310,10 +352,10 @@ function getAllApi($parameters, $class)
                             $value = getDeepProp($data, $whereOperation["key"]);
                             return in_array($value, $whereOperation["value"]);
                     }
-                // }
+                        return false;
+                });
             }
-            return false;
-        });
+    }
     if (isset($parameters["advancedSearch"]))
         $result = advancedSearch($result, $parameters["advancedSearch"]);
     if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null);
