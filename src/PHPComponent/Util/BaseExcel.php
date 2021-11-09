@@ -135,9 +135,9 @@ class BaseExcel {
 
     function setWrapText($rowNumber = null){
         if($rowNumber == null)
-            $this->sheet->getStyle('A1:Z9999')->getAlignment()->setWrapText(true); 
+            $this->sheet->getStyle('A1:AZ9999')->getAlignment()->setWrapText(true); 
         else
-            $this->sheet->getStyle('A1:Z' . $rowNumber)->getAlignment()->setWrapText(true); 
+            $this->sheet->getStyle('A1:AZ' . $rowNumber)->getAlignment()->setWrapText(true); 
     }
 
     function save($path){
