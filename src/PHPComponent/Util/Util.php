@@ -808,3 +808,7 @@ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText
     if($limit != null && sizeof($result) >= $limit) array_splice($result, $limit);
     return $result;
 }
+
+function isNullOrEmptyString($str){
+    return (!isset($str) || trim($str) === '');
+}
