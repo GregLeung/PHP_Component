@@ -300,7 +300,16 @@ function getAllApi($parameters, $class)
                                 return false;
                             case "ARRAY_INCLUDES_VALUE":
                                 $value = getDeepProp($data, $whereOperation["key"]);
-                                return in_array($value, $whereOperation["value"]);
+                                if(is_array($whereOperation["value"]))
+                                    return in_array($value, $whereOperation["value"]);
+                                else
+                                    return in_array($whereOperation["value"],$value);
+                            case "ARRAY_NOT_INCLUDES_VALUE":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                if(is_array($whereOperation["value"]))
+                                    return !in_array($value, $whereOperation["value"]);
+                                else
+                                    return !in_array($whereOperation["value"],$value);
                         }
                     // }
                 }
@@ -348,9 +357,18 @@ function getAllApi($parameters, $class)
                                 }
                             }
                             return false;
-                        case "ARRAY_INCLUDES_VALUE":
-                            $value = getDeepProp($data, $whereOperation["key"]);
-                            return in_array($value, $whereOperation["value"]);
+                            case "ARRAY_INCLUDES_VALUE":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                if(is_array($whereOperation["value"]))
+                                    return in_array($value, $whereOperation["value"]);
+                                else
+                                    return in_array($whereOperation["value"],$value);
+                            case "ARRAY_NOT_INCLUDES_VALUE":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                if(is_array($whereOperation["value"]))
+                                    return !in_array($value, $whereOperation["value"]);
+                                else
+                                    return !in_array($whereOperation["value"],$value);
                     }
                         return false;
                 });
