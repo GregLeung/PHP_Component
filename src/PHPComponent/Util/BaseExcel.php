@@ -21,6 +21,12 @@ class BaseExcel {
         $this->sheet = $this->spreadsheet->getActiveSheet();
     }
 
+    function mergeCell($firstCell, $secondCell){
+        $cell1 = self::convertNumberToLetter($firstCell[0]) . strval($firstCell[1]);
+        $cell2 = self::convertNumberToLetter($secondCell[0]) . strval($secondCell[1]);
+        $this->sheet->mergeCells($cell1.':'.$cell2);
+    }
+
     function setCellValue($cell, $value){
         $this->sheet->setCellValue(self::convertNumberToLetter($cell[0]) . strval($cell[1]), $value);
         $this->currentPosition = $cell;
@@ -44,6 +50,10 @@ class BaseExcel {
 
     function rawSetCellValue($cell, $value){
         $this->sheet->setCellValue($cell, $value);
+    }
+
+    function getCurrentPosition(){
+        return $this->currentPosition;
     }
 
     function setCurrentPosition($position){
