@@ -38,7 +38,8 @@ function init()
         }
     }
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-    header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
+    // header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
+    header('Access-Control-Allow-Headers: *');
     header('Access-Control-Max-Age: 1728000');
     if (($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) {
         $response =  new Response(200, "Success", "");

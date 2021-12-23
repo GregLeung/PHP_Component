@@ -5,6 +5,7 @@
         public $response;
         public $userClass;
         public $classList;
+        public $headers;
         function __construct($classList, $userClass) {
             ini_set('memory_limit', '1024M');
             $this->config = readConfig();
@@ -13,6 +14,7 @@
             setAllowOrigin(array("*"));
             init();
             $this->parameters = getParameter($_POST, $_GET);
+            $this->headers = getallheaders();
             $this->userClass = $userClass;
         }
 
@@ -22,7 +24,7 @@
                 apiKeyChecking();
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
                 $this->response = generateBaseURL($this->classList, $this->parameters, array("userClass" => $this->userClass));
-                $this->response = $function($this->config, $this->parameters, $this->response);
+                $this->response = $function($this->config, $this->parameters, $this->response, $this->headers);
                 $this->loginAPI();
                 $this->extraAPI();
                 if ($this->response == null) throw new Exception("URL Not Found");
