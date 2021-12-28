@@ -490,6 +490,14 @@ function readXlsx($xlsx)
     return $worksheet->toArray();
 }
 
+function readCsv($csv)
+{
+    $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+    $spreadsheet = $reader->load($csv);
+    $worksheet = $spreadsheet->getActiveSheet();
+    return $worksheet->toArray();
+}
+
 function isContain($array, $field, $value)
 {
     if (sizeof($array) > 0 && is_object(current($array))) {
