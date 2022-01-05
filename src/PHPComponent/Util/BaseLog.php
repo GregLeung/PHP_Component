@@ -25,7 +25,7 @@ class BaseLog extends BaseModel{
     }
 
     public static function insert($oldValue, $newValue, $field, $sourceID, $oldValueLabel, $newValueLabel, $fieldLabel,$updatedFromLabel){
-        DB::insert(array("oldValue"=> $oldValue, "newValue"=>$newValue, "field" => $field, "sourceID" =>$sourceID, "fieldLabel" => $fieldLabel, "oldValueLabel" => $oldValueLabel, "newValueLabel" => $newValueLabel, "updatedFromLabel" => $updatedFromLabel, "action" => isset($_GET["ACTION"]) ?$_GET["ACTION"] : null) ,static::class);
+        DB::insert(array("oldValue"=> $oldValue, "newValue"=>$newValue, "field" => $field, "sourceID" =>$sourceID, "fieldLabel" => $fieldLabel, "oldValueLabel" => $oldValueLabel, "newValueLabel" => $newValueLabel, "updatedFromLabel" => $updatedFromLabel, "action" => getParameter($_POST, $_GET)["ACTION"]) ,static::class);
     }
 
     public static function insertLog($instance, $parameters){
