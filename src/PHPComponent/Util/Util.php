@@ -377,7 +377,7 @@ function getAllApi($parameters, $class)
     }
     if (isset($parameters["advancedSearch"]))
         $result = advancedSearch($result, $parameters["advancedSearch"]);
-    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : null);
+    if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : array("prop" => "ID", "order" => "descending"));
     return $result;
 }
 
