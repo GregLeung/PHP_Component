@@ -265,6 +265,12 @@ function getAllApi($parameters, $class)
                                 return getDeepProp($data, $whereOperation["key"]) == $whereOperation["value"];
                             case "NOT_EQUAL":
                                 return getDeepProp($data, $whereOperation["key"]) != $whereOperation["value"];
+                            case "CONTAIN":
+                                try{
+                                    return strpos(getDeepProp($data, $whereOperation["key"]), $whereOperation["value"]) !== false;
+                                }catch(Exception $e){
+                                    return false;
+                                }
                             case "MORE":
                                 return getDeepProp($data, $whereOperation["key"]) > $whereOperation["value"];
                             case "LESS":
