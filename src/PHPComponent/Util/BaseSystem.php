@@ -4,9 +4,9 @@
         public $parameters;
         public $response;
         public $userClass;
+        public $memberClass;
         public $classList;
-        public $headers;
-        function __construct($classList, $userClass) {
+        function __construct($classList, $userClass, $memberClass = null) {
             ini_set('memory_limit', '1024M');
             $this->config = readConfig();
             $this->classList = $classList;
@@ -14,8 +14,8 @@
             setAllowOrigin(array("*"));
             init();
             $this->parameters = getParameter($_POST, $_GET);
-            $this->headers = getallheaders();
             $this->userClass = $userClass;
+            $this->memberClass = $memberClass;
         }
 
         public function ready($function){
@@ -23,8 +23,9 @@
             try{
                 apiKeyChecking();
                 $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
+                $GLOBALS['currentMember'] = getCurrentUser($this->memberClass);
                 $this->response = generateBaseURL($this->classList, $this->parameters, array("userClass" => $this->userClass));
-                $this->response = $function($this->config, $this->parameters, $this->response, $this->headers);
+                $this->response = $function($this->config, $this->parameters, $this->response);
                 $this->loginAPI();
                 $this->extraAPI();
                 if ($this->response == null) throw new Exception("URL Not Found");
@@ -48,12 +49,19 @@
                     if (!isExistedNotNull($this->parameters, "loginName")) throw new Exception('Login Name does not existed');
                     $this->response = new Response(200, "Success", Auth::login($this->userClass, $this->parameters['loginName'], $this->parameters['password']));
                     break;
-                case "mobile_login":
+                case "user_logout":
+                    if (!isExistedNotNull($this->parameters, "token")) throw new Exception('Token does not existed');
+                    logOutRemoveToken($this->parameters['token']);
+                    $this->response = new Response(200, "Success", "");
+                    break;
+                case "member_login":
+                    if($this->memberClass == null) throw new Exception('MemberShip Function Does Not Activated');
                     if (!isExistedNotNull($this->parameters, "password")) throw new Exception('Password does not existed');
                     if (!isExistedNotNull($this->parameters, "loginName")) throw new Exception('Login Name does not existed');
-                    $this->response = new Response(200, "Success", Auth::login($this->userClass, $this->parameters['loginName'], $this->parameters['password'], 999999999));
+                    $this->response = new Response(200, "Success", Auth::login($this->memberClass, $this->parameters['loginName'], $this->parameters['password']));
                     break;
-                case "user_logout":
+                case "member_logout":
+                    if($this->memberClass == null) throw new Exception('MemberShip Function Does Not Activated');
                     if (!isExistedNotNull($this->parameters, "token")) throw new Exception('Token does not existed');
                     logOutRemoveToken($this->parameters['token']);
                     $this->response = new Response(200, "Success", "");

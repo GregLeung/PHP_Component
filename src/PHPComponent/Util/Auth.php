@@ -10,14 +10,14 @@ class Auth{
 
     static function getLoginUser($userClass)
     {
-        if (getRequestToken() == "" || getRequestToken() == null)
+        if (getRequestToken($userClass) == "" || getRequestToken($userClass) == null)
             return null;
-        if (sizeof(filter(DB::getByColumn(Token::class, 'token', getRequestToken()), function($token){return  time() < $token->expiredDate;})) == 0)
+        if (sizeof(filter(DB::getByColumn($userClass::$tokenClass, 'token', getRequestToken($userClass)), function($token){return  time() < $token->expiredDate;})) == 0)
             throw new BaseException("Token Invalid", -2);
         // $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
-        $token = DB::getByColumn(Token::class, 'token', getRequestToken())[0];
+        $token = DB::getByColumn($userClass::$tokenClass, 'token', getRequestToken($userClass))[0];
         $token->expiredDate = time() + 6048000;
-        DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), Token::class);
+        DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), $userClass::$tokenClass);
         return DB::getByID($userClass, $token->userID, array("fullRight" => true));
     }
 
@@ -38,18 +38,18 @@ function addToken($user, $expiredTime = 6048000)
     if (isTokenMoreThanMaximum($user, $config)) {
         $user = removeToken($user);
     }
-    DB::insert(array("token" => $token, "expiredDate" => time() + $expiredTime, "userID" => $user->ID), Token::class);
+    DB::insert(array("token" => $token, "expiredDate" => time() + $expiredTime, "userID" => $user->ID), $user::$tokenClass);
     return $token;
 }
 
 function isTokenMoreThanMaximum($user, $config)
 {
-    return DB::getCount(Token::class, array("userID" => $user->ID)) >= $config->MaximumNumberOfToken;
+    return DB::getCount($user::$tokenClass, array("userID" => $user->ID)) >= $config->MaximumNumberOfToken;
 }
 
 function removeToken($user)
 {
-    $result = DB::getByColumn(Token::class, "userID", $user->ID)[0];
-    DB::delete($result->ID, Token::class);
+    $result = DB::getByColumn($user::$tokenClass, "userID", $user->ID)[0];
+    DB::delete($result->ID, $user::$tokenClass);
     return $user;
 }

@@ -86,10 +86,10 @@ function getFile($filePath)
     readfile($filePath);
 }
 
-function getRequestToken()
+function getRequestToken($userClass)
 {
     try {
-        if (array_key_exists('Token', getallheaders())) return getallheaders()['Token'];
+        if (array_key_exists($userClass::$tokenClass, getallheaders())) return getallheaders()[$userClass::$tokenHeader];
         else return "";
     } catch (Exception $exception) {
         return "";
@@ -778,6 +778,19 @@ function getDeepProp($classObject, $prop)
     return $classObject;
 }
 
+function isBeforeDate($toDate, $value)
+{
+    $valueDate = date('Y-m-d H:i:s', strtotime($value));
+    $dateEnd = date('Y-m-d H:i:s', strtotime($toDate));
+    return $valueDate <= $dateEnd;
+}
+
+function isOverDate($fromDate, $value)
+{
+    $valueDate = date('Y-m-d H:i:s', strtotime($value));
+    $dateBegin = date('Y-m-d H:i:s', strtotime($fromDate));
+    return $valueDate >= $dateBegin;
+}
 function isBetweenDates($fromDate, $toDate, $value)
 {
     $valueDate = date('Y-m-d H:i:s', strtotime($value));
