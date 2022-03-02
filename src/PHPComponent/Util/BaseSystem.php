@@ -97,6 +97,24 @@ class BaseSystem
                 Member::insert($this->parameters);
                 $this->response = new Response(200, "Success", "");
                 break;
+            case "get_variant_product":
+                if (!isset($this->parameters["productGroupIDList"]))
+                    throw new Exception("Product Group Cannot Be Empty");
+                $productList = array();
+                $productIDList = array();
+                foreach($this->parameters["productGroupIDList"] as $ID){
+                    foreach(DB::getByID(ProductGroup::class, $ID)->productIDList as $productID){
+                        if(!in_array($productID, $productIDList))
+                            $productIDList[] = $productID;
+                    }
+                }
+                foreach($productIDList as $ID){
+                    $product = DB::getByID(Product::class, $ID, array("joinClass" => ["Inventory", "Warehouse", "Price", "ProductGroup"]));
+                    if($product != null)
+                        $productList[] = $product;
+                }
+                $this->response = new Response(200, "Success", array("Product" => $productList));
+                break;
         }
     }
 
