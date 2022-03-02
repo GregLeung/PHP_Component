@@ -68,6 +68,8 @@ class BaseExcel {
             if(isset($options["style"]))
                 $this->setCellStyle($this->currentPosition, $options["style"]);
             $this->setCellValue($this->currentPosition, $valueList[$i]);
+            if(isset($options["formatList"]))
+                $this->setCellFormat($this->currentPosition, $options["formatList"][$i]);
             $this->currentPosition[0] += 1;
         }
         $this->nextRow();

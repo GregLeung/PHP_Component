@@ -4,7 +4,8 @@ abstract class LoginUser extends BaseModel{
     public $loginName; 
     public $username; 
     public $type; 
-    public $tokenClass = Token::class; 
+    public static $tokenClass = Token::class; 
+    public static $tokenHeader = "Token"; 
 
     static function getCurrentType(){
         try{

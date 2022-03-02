@@ -10,12 +10,11 @@ class Auth{
 
     static function getLoginUser($userClass)
     {
-        if (getRequestToken($userClass) == "" || getRequestToken($userClass) == null)
+        if (getRequestToken($userClass) == "" || getRequestToken($userClass) == null || getRequestToken($userClass) == "null")
             return null;
-        if (sizeof(filter(DB::getByColumn($userClass::$tokenClass, 'token', getRequestToken($userClass)), function($token){return  time() < $token->expiredDate;})) == 0)
+        if (sizeof(filter(DB::getByColumn($userClass::$tokenClass, "token", getRequestToken($userClass)), function($token){return  time() < $token->expiredDate;})) == 0)
             throw new BaseException("Token Invalid", -2);
-        // $userID = DB::getByColumn(Token::class, 'token', getRequestToken())[0]->userID;
-        $token = DB::getByColumn($userClass::$tokenClass, 'token', getRequestToken($userClass))[0];
+        $token = DB::getByColumn($userClass::$tokenClass, "token", getRequestToken($userClass))[0];
         $token->expiredDate = time() + 6048000;
         DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), $userClass::$tokenClass);
         return DB::getByID($userClass, $token->userID, array("fullRight" => true));

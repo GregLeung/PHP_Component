@@ -37,8 +37,8 @@ function init()
             return $headers;
         }
     }
+    header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-    // header('Access-Control-Allow-Headers: token, Apikey, Content-Type');
     header('Access-Control-Allow-Headers: *');
     header('Access-Control-Max-Age: 1728000');
     if (($_SERVER['REQUEST_METHOD'] == 'OPTIONS')) {
@@ -89,12 +89,14 @@ function getFile($filePath)
 function getRequestToken($userClass)
 {
     try {
-        if (array_key_exists($userClass::$tokenClass, getallheaders())) return getallheaders()[$userClass::$tokenHeader];
+        if (array_key_exists($userClass::$tokenHeader, getallheaders())) return getallheaders()[$userClass::$tokenHeader];
         else return "";
     } catch (Exception $exception) {
+        writeCustomLog(json_encode($exception));
         return "";
     }
 }
+
 
 function stdClassToArray($classObj)
 {
@@ -119,9 +121,9 @@ function parseStdClass($object)
 
 
 
-function logOutRemoveToken($token)
+function logOutRemoveToken($userClass, $token)
 {
-    DB::deleteRealByWhereCondition(Token::class, array('token' => $token));
+    DB::deleteRealByWhereCondition($userClass::$tokenClass, array('token' => $token));
 }
 
 function generateRandomString($length = 10)
