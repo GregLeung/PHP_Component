@@ -83,8 +83,18 @@ class BaseSystem
                     throw new Exception("Member Login Required"); 
                 if (!isset($this->parameters["orders"]))
                     throw new Exception("Order Cannot Be Empty");
-                $parameters["orders"]["status"] = "UNPAID";
-                $this->parameters["orders"]["ID"] = Orders::insertOrderWithShoppingCart($this->parameters["orders"], getSelfShoppingCart());
+                $this->parameters["orders"]["orderStatus"] = "CONFIRMED";
+                $this->parameters["orders"]["ID"] = Orders::clientInsertOrder($this->parameters["orders"], $this->parameters["productList"]);
+                $this->response = new Response(200, "Success", array("Orders" => $this->parameters["orders"]));
+                break;
+            case "self_draft_order":
+                if ($GLOBALS['currentMember'] == null)
+                    throw new Exception("Member Login Required"); 
+                if (!isset($this->parameters["orders"]))
+                    throw new Exception("Order Cannot Be Empty");
+                $this->parameters["orders"]["orderStatus"] = "DRAFT";
+                writeCustomLog(json_encode($this->parameters));
+                $this->parameters["orders"]["ID"] = Orders::clientInsertOrder($this->parameters["orders"], $this->parameters["productList"]);
                 $this->response = new Response(200, "Success", array("Orders" => $this->parameters["orders"]));
                 break;
             case "self_member_update":
@@ -99,21 +109,23 @@ class BaseSystem
                 break;
             case "get_variant_product":
                 if (!isset($this->parameters["productGroupIDList"]))
-                    throw new Exception("Product Group Cannot Be Empty");
-                $productList = array();
-                $productIDList = array();
-                foreach($this->parameters["productGroupIDList"] as $ID){
-                    foreach(DB::getByID(ProductGroup::class, $ID)->productIDList as $productID){
-                        if(!in_array($productID, $productIDList))
-                            $productIDList[] = $productID;
+                    $this->response = new Response(200, "Success", array("Product" => []));
+                else{
+                    $productList = array();
+                    $productIDList = array();
+                    foreach($this->parameters["productGroupIDList"] as $ID){
+                        foreach(DB::getByID(ProductGroup::class, $ID)->productIDList as $productID){
+                            if(!in_array($productID, $productIDList))
+                                $productIDList[] = $productID;
+                        }
                     }
+                    foreach($productIDList as $ID){
+                        $product = DB::getByID(Product::class, $ID, array("joinClass" => ["Inventory", "Warehouse", "Price", "ProductGroup"]));
+                        if($product != null)
+                            $productList[] = $product;
+                    }
+                    $this->response = new Response(200, "Success", array("Product" => $productList));
                 }
-                foreach($productIDList as $ID){
-                    $product = DB::getByID(Product::class, $ID, array("joinClass" => ["Inventory", "Warehouse", "Price", "ProductGroup"]));
-                    if($product != null)
-                        $productList[] = $product;
-                }
-                $this->response = new Response(200, "Success", array("Product" => $productList));
                 break;
         }
     }
@@ -246,7 +258,7 @@ function getSelfShoppingCart(){
 
 function getSelfOrders(){
     return DB::getAll_new(Orders::class, array(
-        "joinClass" => ["OrderDetail", "Product"],
+        "joinClass" => ["OrderDetail", "Product", "DeliveryMethod", "PaymentMethod"],
         "whereOperation" => [array("type" => "EQUAL", "key" => "memberID", "value" => $GLOBALS['currentMember']->ID)]
     ));
 }

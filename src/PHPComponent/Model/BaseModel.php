@@ -213,6 +213,28 @@ abstract class BaseModel
     public function getDeepProp($props){
         return getDeepProp($this, $props);
     }
+    public function updateChildren($parameters, $childrenClass, $childrenProps, $parentProps){
+        $this->update($parameters);
+        foreach($parameters[$childrenProps] as $child){
+            if(isset($child["ID"]))
+                DB::getByID($childrenClass, $child["ID"])->update($child);
+            else
+                $childrenClass::insert(array_merge($child, array($parentProps => $this->ID)));
+        }
+        foreach($this->$childrenProps as $originalChild){
+            $shouldDelete = true;
+            foreach($parameters[$childrenProps] as $child){
+                if(isset($child["ID"]) && $originalChild->ID === intval($child["ID"])){
+                    $shouldDelete = false;
+                    break;
+                }
+            }
+            if($shouldDelete)
+                $originalChild->delete();
+        }
+    }
+
+    public function update($parameters){}
 }
 
 class BaseTypeEnum
