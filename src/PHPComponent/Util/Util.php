@@ -72,11 +72,11 @@ function writeCustomLog($value)
 
 function readConfig()
 {
-    return json_decode(file_get_contents("./config.json"));
+    return json_decode(file_get_contents(SITE_ROOT . "/config.json"));
 }
 function readSystemConfig()
 {
-    return json_decode(file_get_contents("./system_config.json"));
+    return json_decode(file_get_contents(SITE_ROOT . "/system_config.json"));
 }
 function getFile($filePath)
 {
@@ -129,6 +129,17 @@ function logOutRemoveToken($userClass, $token)
 function generateRandomString($length = 10)
 {
     $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+
+function generateRandomNumber($length = 6)
+{
+    $characters = '0123456789';
     $charactersLength = strlen($characters);
     $randomString = '';
     for ($i = 0; $i < $length; $i++) {
@@ -291,6 +302,13 @@ function getAllApi($parameters, $class)
                                 return sizeof(getDeepProp($data, $whereOperation["key"])) >= $whereOperation["value"];
                             case "LENGTH_LESS_OR_EQUAL":
                                 return sizeof(getDeepProp($data, $whereOperation["key"])) <= $whereOperation["value"];
+                            case "BETWEEN":
+                                $value = getDeepProp($data, $whereOperation["key"]);
+                                if($value == null)
+                                    return false;
+                                $start = $whereOperation["value"][0];
+                                $end = $whereOperation["value"][1];
+                                return $value >= $start && $value <= $end;
                             case "BETWEEN_TIME_RANGE":
                                 $value = getDeepProp($data, $whereOperation["key"]);
                                 if($value == null)
@@ -350,6 +368,13 @@ function getAllApi($parameters, $class)
                             return sizeof(getDeepProp($data, $whereOperation["key"])) >= $whereOperation["value"];
                         case "LENGTH_LESS_OR_EQUAL":
                             return sizeof(getDeepProp($data, $whereOperation["key"])) <= $whereOperation["value"];
+                        case "BETWEEN":
+                            $value = getDeepProp($data, $whereOperation["key"]);
+                            if($value == null)
+                                return false;
+                            $start = $whereOperation["value"][0];
+                            $end = $whereOperation["value"][1];
+                            return $value >= $start && $value <= $end;
                         case "BETWEEN_TIME_RANGE":
                             $value = getDeepProp($data, $whereOperation["key"]);
                             if($value == null)
@@ -648,8 +673,6 @@ function advancedSearch($data, $advancedSearch)
                 });
                 break;
             case "MULTI-SELECTION-SELECTOR":
-                writeCustomLog("AAA");
-                writeCustomLog(json_encode($searchFilterSet["value"]));
                 $data = filter($data, function ($data, $key) use ($column, $searchFilterSet) {
                     foreach ($searchFilterSet["value"] as $value) {
                         $dataValue = getDeepProp($data, $column);

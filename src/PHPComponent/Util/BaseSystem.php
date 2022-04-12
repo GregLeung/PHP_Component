@@ -26,7 +26,9 @@ class BaseSystem
         try {
             apiKeyChecking();
             $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
-            $GLOBALS['currentMember'] = getCurrentUser($this->memberClass);
+            $GLOBALS['currentMember'] = ($this->memberClass != null)? getCurrentUser($this->memberClass): null;
+            if(isset(getallheaders()["Sessionid"]))
+                $GLOBALS['Sessionid'] = getallheaders()["Sessionid"];
             $this->response = generateBaseURL($this->classList, $this->parameters, array("userClass" => $this->userClass));
             $this->response = $function($this->config, $this->parameters, $this->response);
             $this->loginAPI();
@@ -51,9 +53,7 @@ class BaseSystem
     {
         switch ($this->parameters["ACTION"]) {
             case "self_get_shoppingCart":
-                if ($GLOBALS['currentMember'] == null)
-                    throw new Exception("Member Login Required");
-                $this->response = new Response(200, "Success", array("ShoppingCart" => getSelfShoppingCart()));
+                $this->response = new Response(200, "Success", array("ShoppingCart" => getSelfShoppingCart($this->parameters)));
                 break;
             case "self_get_orders":
                 if ($GLOBALS['currentMember'] == null)
@@ -61,71 +61,144 @@ class BaseSystem
                 $this->response = new Response(200, "Success", array("Orders" => getSelfOrders()));
                 break;
             case "self_add_shoppingcart_item":
-                if ($GLOBALS['currentMember'] == null)
-                    throw new Exception("Member Login Required");
                 if (!isset($this->parameters["productID"]))
                     throw new Exception("Product ID Cannot Be Empty");
-                $shoppingCart = getSelfShoppingCart();
-                ShoppingCartDetail::insert(array("shoppingCartID" => $shoppingCart->ID, "productID" => $this->parameters["productID"], "quantity" => $this->parameters["quantity"] ?? 1));
+                $shoppingCart = getSelfShoppingCart($this->parameters);
+                $shoppingCartDetail = find($shoppingCart->children, function ($shoppingCartDetail) {
+                    return ($shoppingCartDetail->product->ID == $this->parameters["productID"]);
+                });
+                if ($shoppingCartDetail == null)
+                    ShoppingCartDetail::insert(array("shoppingCartID" => $shoppingCart->ID, "productID" => $this->parameters["productID"], "quantity" => $this->parameters["quantity"] ?? 1));
+                else
+                    $shoppingCartDetail->update(["quantity" => $shoppingCartDetail->quantity + $this->parameters["quantity"]]);
                 $this->response = new Response(200, "Success", "");
                 break;
             case "self_clean_shoppingcart":
                 if ($GLOBALS['currentMember'] == null)
                     throw new Exception("Member Login Required");
-                $shoppingCart = getSelfShoppingCart();
-                foreach($shoppingCart->children as $shoppingCartDetail){
+                $shoppingCart = getSelfShoppingCart($this->parameters);
+                foreach ($shoppingCart->children as $shoppingCartDetail) {
                     $shoppingCartDetail->delete();
                 }
                 $this->response = new Response(200, "Success", "");
                 break;
             case "self_confirm_order":
                 if ($GLOBALS['currentMember'] == null)
-                    throw new Exception("Member Login Required"); 
+                    throw new Exception("Member Login Required");
                 if (!isset($this->parameters["orders"]))
                     throw new Exception("Order Cannot Be Empty");
-                $this->parameters["orders"]["orderStatus"] = "CONFIRMED";
-                $this->parameters["orders"]["ID"] = Orders::clientInsertOrder($this->parameters["orders"], $this->parameters["productList"]);
-                $this->response = new Response(200, "Success", array("Orders" => $this->parameters["orders"]));
+                $orderID = Orders::insertOrder($this->parameters["orders"], $this->parameters["productList"]);
+                $order = DB::getByID(Orders::class, $orderID, ["joinClass" => ["OrderDetail", "Product"]]);
+                $order->update(["orderStatus" => "CONFIRMED", "children" => $order->children]);
+                $order = DB::getByID(Orders::class, $orderID, ["joinClass" => ["OrderDetail", "Product", "Member"]]);
+                $GLOBALS['temp_orderID'] = $order->ID;
+                $mailJet = new BaseMailjet(getRenderedHTML(SITE_ROOT . "/Email/order_confirm_email_admin.php"));
+                $mailJet->sendToAdmin("新訂單通知");
+                $mailJet->setTemplate(getRenderedHTML(SITE_ROOT . "/Email/order_confirm_email_client.php"));
+                $mailJet->sendToMember([$order->member], "新訂單通知");
+                $this->response = new Response(200, "Success", array("Orders" => $order));
                 break;
             case "self_draft_order":
                 if ($GLOBALS['currentMember'] == null)
-                    throw new Exception("Member Login Required"); 
+                    throw new Exception("Member Login Required");
                 if (!isset($this->parameters["orders"]))
                     throw new Exception("Order Cannot Be Empty");
                 $this->parameters["orders"]["orderStatus"] = "DRAFT";
-                writeCustomLog(json_encode($this->parameters));
-                $this->parameters["orders"]["ID"] = Orders::clientInsertOrder($this->parameters["orders"], $this->parameters["productList"]);
+                $this->parameters["orders"]["ID"] = Orders::insertOrder($this->parameters["orders"], $this->parameters["productList"]);
                 $this->response = new Response(200, "Success", array("Orders" => $this->parameters["orders"]));
                 break;
             case "self_member_update":
                 if ($GLOBALS['currentMember'] == null)
-                    throw new Exception("Member Login Required"); 
+                    throw new Exception("Member Login Required");
                 $GLOBALS['currentMember']->update($this->parameters);
                 $this->response = new Response(200, "Success", "");
                 break;
             case "register_member":
-                Member::insert($this->parameters);
+                // Member::insert($this->parameters);
+                Auth::register(Member::class, $this->parameters, ["mobile", "email"]);
                 $this->response = new Response(200, "Success", "");
                 break;
             case "get_variant_product":
                 if (!isset($this->parameters["productGroupIDList"]))
                     $this->response = new Response(200, "Success", array("Product" => []));
-                else{
+                else {
                     $productList = array();
                     $productIDList = array();
-                    foreach($this->parameters["productGroupIDList"] as $ID){
-                        foreach(DB::getByID(ProductGroup::class, $ID)->productIDList as $productID){
-                            if(!in_array($productID, $productIDList))
+                    foreach ($this->parameters["productGroupIDList"] as $ID) {
+                        foreach (DB::getByID(ProductGroup::class, $ID)->productIDList as $productID) {
+                            if (!in_array($productID, $productIDList))
                                 $productIDList[] = $productID;
                         }
                     }
-                    foreach($productIDList as $ID){
+                    foreach ($productIDList as $ID) {
                         $product = DB::getByID(Product::class, $ID, array("joinClass" => ["Inventory", "Warehouse", "Price", "ProductGroup"]));
-                        if($product != null)
+                        if ($product != null)
                             $productList[] = $product;
                     }
                     $this->response = new Response(200, "Success", array("Product" => $productList));
                 }
+                break;
+            case "get_discount_by_product":
+                if (!isset($this->parameters["ID"]))
+                    throw new Exception("Product ID Cannot Be Empty");
+                $result = [];
+                $discountList = DB::getAll_new(Discount::class, ["joinClass" => ["DiscountRule"], "whereOperation" => [
+                    [
+                        "key" => "isValid",
+                        "value" => true,
+                        "type" => "EQUAL"
+                    ]
+                ]]);
+                foreach ($discountList as $discount) {
+                    if (!$discount->isForever) {
+                        $startTime = strtotime($discount->startDate);
+                        $endTime = strtotime($discount->expiredDate);
+                        $currentDate = strtotime(date("Y-m-d"));
+                        if ($currentDate > $endTime ||   $currentDate < $startTime)
+                            continue;
+                    }
+                    foreach ($discount->children as $rule) {
+                        if ($rule->conditionType == "AMOUNT") {
+                            $result[] = $discount;
+                            break;
+                        } else if ($rule->conditionType == "PRODUCT" && in_array($this->parameters["ID"], $rule->conditionProductIDList)) {
+                            $result[] = $discount;
+                            break;
+                        }
+                    }
+                }
+                $this->response = new Response(200, "Success", array("Discount" => $result));
+                break;
+            case "calculate_discount_amount":
+                $this->response = new Response(200, "Success", calculateDiscountAmount($this->parameters));
+                break;
+            case "send_verification_code":
+                if ($GLOBALS['currentMember'] == null)
+                    throw new Exception("Member Login Required");
+                $member = DB::getByID(Member::class, $GLOBALS['currentMember']->ID);
+                if($member->isValidated)
+                    throw new Exception("Member Has Been Validated Already");
+                $verifyCode = generateRandomNumber();
+                $member->update(["verifyCode" => $verifyCode]);
+                if($this->parameters["type"] == "MOBILE"){
+                    $baseSMS = new BaseSMS();
+                    $template = str_replace("{{verificationCode}}", $verifyCode, $baseSMS->verificationCodeTemplate);
+                    Member::sendVerificationCode($member->mobile, $template);
+                }else{
+                    $GLOBALS['temp_memberID'] = $GLOBALS['currentMember']->ID;
+                    $mailJet = new BaseMailjet(getRenderedHTML(SITE_ROOT . "/Email/verification_email.php"));
+                    $mailJet->sendToMember([$member], "新訂單通知");
+                }
+                $this->response = new Response(200, "Success", "");
+                break;
+            case "verify_member":
+                if ($GLOBALS['currentMember'] == null)
+                    throw new Exception("Member Login Required");
+                $member = DB::getByID(Member::class, $GLOBALS['currentMember']->ID);
+                if($member->verifyCode != $this->parameters["verifyCode"])
+                    throw new Exception("Invalid Verify Code");
+                $member->update(["isValidated" => 1]);
+                $this->response = new Response(200, "Success", "");
                 break;
         }
     }
@@ -133,28 +206,28 @@ class BaseSystem
     private function onlineStoreCMSAPI()
     {
         switch ($this->parameters["ACTION"]) {
-            case "cms_insert_orders":
-                if ($GLOBALS['currentUser'] == null)
-                    throw new Exception("User Login Required");
-                Orders::insertOrder($this->parameters);
-                $this->response = new Response(200, "Success", "");
-                break;
-            case "cms_update_orders":
-                if ($GLOBALS['currentUser'] == null)
-                    throw new Exception("User Login Required");
-                $order = DB::getByID(Orders::class, $this->parameters["ID"], array("joinClass" => ["OrderDetail"]));
-                $order->updateOrder($this->parameters);
-                $this->response = new Response(200, "Success", "");
-                break;
+            // case "cms_insert_orders":
+            //     if ($GLOBALS['currentUser'] == null)
+            //         throw new Exception("User Login Required");
+            //     Orders::insertOrder($this->parameters);
+            //     $this->response = new Response(200, "Success", "");
+            //     break;
+            // case "cms_update_orders":
+            //     if ($GLOBALS['currentUser'] == null)
+            //         throw new Exception("User Login Required");
+            //     $order = DB::getByID(Orders::class, $this->parameters["ID"], array("joinClass" => ["OrderDetail"]));
+            //     $order->updateOrder($this->parameters);
+            //     $this->response = new Response(200, "Success", "");
+            //     break;
             case "cms_add_variant_product":
                 if ($GLOBALS['currentUser'] == null)
                     throw new Exception("User Login Required");
-                if(!isset($this->parameters["product"]))
+                if (!isset($this->parameters["product"]))
                     throw new Exception("Product Cannot Be Empty");
-                if(!isset($this->parameters["productGroupParameterList"]))
+                if (!isset($this->parameters["productGroupParameterList"]))
                     throw new Exception("Product Group Cannot Be Empty");
                 $productID = Product::insert($this->parameters["product"]);
-                foreach($this->parameters["productGroupParameterList"] as $productGroupParameter){
+                foreach ($this->parameters["productGroupParameterList"] as $productGroupParameter) {
                     $productGroup = DB::getByID(ProductGroup::class, $productGroupParameter["ID"]);
                     $parameters = array(
                         "productIDList" => $productGroup->productIDList,
@@ -164,7 +237,7 @@ class BaseSystem
                     $parameters["optionList"][$productGroupParameter["index"]]->productIDList[] = $productID;
                     $productGroup->update($parameters);
                 }
-                $this->response = new Response(200, "Success", "");
+                $this->response = new Response(200, "Success", ["Product" => DB::getByID(Product::class, $productID, ["joinClass" => ["ProductGroup"]])]);
                 break;
         }
     }
@@ -183,20 +256,25 @@ class BaseSystem
                 break;
             case "member_login":
                 if ($this->memberClass == null) throw new Exception('MemberShip Function Does Not Activated');
-                switch($this->parameters['accountType']){
+                switch ($this->parameters['accountType']) {
                     case "NORMAL":
                         if (!isExistedNotNull($this->parameters, "password")) throw new Exception('Password does not existed');
-                        if (!isExistedNotNull($this->parameters, "loginName")) throw new Exception('Login Name does not existed');
-                        $this->response = new Response(200, "Success", Auth::login($this->memberClass, $this->parameters['loginName'], $this->parameters['password']));
+                        $result = Auth::passwordLogin($this->memberClass, ["email", "mobile"],$this->parameters['loginName'], $this->parameters['password']);
+                        $member = $result["user"];
+                        $member->afterLogin();
+                        $this->response = new Response(200, "Success", $result);
                         break;
                     case "GOOGLE":
-                        if(!isset($this->parameters["email"])) throw new Exception('Email does not existed');
+                        if (!isset($this->parameters["email"])) throw new Exception('Email does not existed');
                         $memberList = DB::getAll_new($this->memberClass, array("whereOperationType" => "AND", "whereOperation" => array(array("type" => "EQUAL", "key" => "accountType", "value" => "GOOGLE"), array("type" => "EQUAL", "key" => "email", "value" => $this->parameters["email"]))));
-                        if(sizeof($memberList) == 0){
+                        if (sizeof($memberList) == 0) {
                             $memberID = $this->memberClass::insert($this->parameters);
                             $member = DB::getByID($this->memberClass, $memberID);
-                        }else
+                        } else
                             $member = $memberList[0];
+                        if(!$member->isValidated)
+                            $member->update(["isValidated" => true]);
+                        $member->afterLogin();
                         $token = addToken($member);
                         $this->response = new Response(200, "Success", array("user" => $member, "token" => $token));
                         break;
@@ -243,23 +321,160 @@ class BaseSystem
     }
 }
 
-function getSelfShoppingCart(){
+function calculateDiscountAmount($parameters)
+{
+    if (!isset($parameters["productList"]))
+        throw new Exception("Product List Cannot Be Empty");
+    $validDiscountRuleList = [];
+    $validDiscountList = [];
+    $originalTotalPrice = 0;
+    foreach($parameters["productList"] as &$product){
+        $originalProduct = DB::getByID(Product::class, $product["ID"]);
+        $product["price"] = $originalProduct->price;
+        $product["finalPrice"] = $originalProduct->price;
+        $originalTotalPrice += $product["quantity"] * $originalProduct->price;
+    }
+    unset($product);
+    $discountList = DB::getAll_new(Discount::class, ["joinClass" => ["DiscountRule"], "whereOperation" => [
+        [
+            "key" => "isValid",
+            "value" => true,
+            "type" => "EQUAL"
+        ]
+    ]]);
+    foreach ($discountList as $discount) {
+        if (!$discount->isForever) {
+            $startTime = strtotime($discount->startDate);
+            $endTime = strtotime($discount->expiredDate);
+            $currentDate = strtotime(date("Y-m-d"));
+            if ($currentDate > $endTime ||   $currentDate < $startTime)
+                continue;
+        }
+        foreach ($discount->children as $rule) {
+            if ($rule->conditionType == "AMOUNT" && $originalTotalPrice >= $rule->conditionAmount) {
+                $validDiscountList[] = $discount;
+                $validDiscountRuleList[] = $rule;
+                break;
+            }else if ($rule->conditionType == "PRODUCT") {
+                foreach($parameters["productList"] as $product){
+                    if(in_array($product["ID"], $rule->conditionProductIDList)){
+                        if($product["quantity"] >= $rule->conditionQuantity){
+                            $validDiscountList[] = $discount;
+                            $validDiscountRuleList[] = $rule;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    foreach(filter($validDiscountRuleList, function($rule){
+        return $rule->discountType == DiscountType::PERCENTAGE;
+    }) as $rule){
+        if($rule->isApplyProduct){
+            foreach($parameters["productList"] as &$product){
+                if(in_array($product["ID"], $rule->productIDList))
+                    $product["finalPrice"] = $product["finalPrice"] * (100 - $rule->amount)/100;
+            }
+        }
+    }
+    unset($product);
+    foreach(filter($validDiscountRuleList, function($rule){
+        return $rule->discountType == DiscountType::DISCOUNT_PRODUCT;
+    }) as $rule){
+        foreach($parameters["productList"] as &$product){
+            if(in_array($product["ID"], $rule->productIDList) && $product["price"] >= $rule->amount)
+                $product["finalPrice"] = $rule->amount;
+        }
+    }
+    unset($product);
+    foreach(filter($validDiscountRuleList, function($rule){
+        return $rule->discountType == DiscountType::FIXED;
+    }) as $rule){
+        if($rule->isApplyProduct){
+            foreach($parameters["productList"] as &$product){
+                if(in_array($product["ID"], $rule->productIDList)){
+                    $product["finalPrice"] = $product["finalPrice"] - $rule->amount;
+                    if($product["finalPrice"] < 0)
+                        $product["finalPrice"] = 0;
+                }
+            }
+        }
+    }
+    unset($product);
+    $deductAmount = 0;
+    $finalPriceSum = 0;
+    foreach($parameters["productList"] as &$product){
+        $finalPriceSum += $product["finalPrice"] * $product["quantity"];
+    }
+    unset($product);
+    //TODO Implement FREE_PRODUCT Logic
+    foreach(filter($validDiscountRuleList, function($rule){
+        return $rule->discountType == DiscountType::PERCENTAGE;
+    }) as $rule){
+        if(!$rule->isApplyProduct){
+            $deductAmount += $finalPriceSum * $rule->amount / 100;
+        }
+    }
+    foreach(filter($validDiscountRuleList, function($rule){
+        return $rule->discountType == DiscountType::FIXED;
+    }) as $rule){
+        if(!$rule->isApplyProduct){
+            $deductAmount += $rule->amount;
+        }
+    }
+    return [
+        "originalTotalPrice" => $originalTotalPrice,
+        "totalPrice" => $finalPriceSum - $deductAmount,
+        "discountList" => $validDiscountList,
+        "productList" => $parameters["productList"]
+    ];
+}
+
+function getSelfShoppingCart($parameters)
+{
+    $whereOperationList = [];
+    if(isset($GLOBALS['currentMember']->ID))
+        $whereOperationList[] = array("type" => "EQUAL", "key" => "memberID", "value" => $GLOBALS['currentMember']->ID);
+    if(isset($GLOBALS['Sessionid']))
+        $whereOperationList[] = array("type" => "EQUAL", "key" => "sessionID", "value" => $GLOBALS['Sessionid']);
     $shoppingCartList = DB::getAll_new(ShoppingCart::class, array(
-        "joinClass" => ["ShoppingCartDetail", "Product"],
-        "whereOperation" => [array("type" => "EQUAL", "key" => "memberID", "value" => $GLOBALS['currentMember']->ID)]
+        "joinClass" => ["ShoppingCartDetail", "Product", "ProductGroup"],
+        "whereOperationType" => "OR",
+        "whereOperation" => $whereOperationList
     ));
-    if (sizeof($shoppingCartList) > 0)
-        return $shoppingCartList[0];
-    else {
-        $id = DB::insert(array("memberID" => $GLOBALS['currentMember']->ID), ShoppingCart::class);
+    if(sizeof($shoppingCartList) > 0){
+        usort($shoppingCartList, function ($a, $b){
+            try{
+                return strtotime($a->lastUpdateDate) < strtotime($b->lastUpdateDate);
+            }catch(Exception $e){
+                return true;
+            }
+        });
+        $shoppingCart = $shoppingCartList[0];
+        $shoppingCart->cleanOldProduct();
+        return $shoppingCart;
+    }else{
+        $id = ShoppingCart::insert(array("memberID" => isset($GLOBALS['currentMember']->ID) ? $GLOBALS['currentMember']->ID : null, "sessionID" => isset($GLOBALS['Sessionid']) ? $GLOBALS['Sessionid'] : null));
         return DB::getByID(ShoppingCart::class, $id);
     }
 }
 
-function getSelfOrders(){
+
+function getSelfOrders()
+{
     return DB::getAll_new(Orders::class, array(
         "joinClass" => ["OrderDetail", "Product", "DeliveryMethod", "PaymentMethod"],
         "whereOperation" => [array("type" => "EQUAL", "key" => "memberID", "value" => $GLOBALS['currentMember']->ID)]
     ));
 }
 
+function getRenderedHTML($path)
+{
+    ob_start();
+    include($path);
+    $var=ob_get_contents(); 
+    ob_end_clean();
+    return $var;
+}

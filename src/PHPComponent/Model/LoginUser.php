@@ -25,6 +25,11 @@ abstract class LoginUser extends BaseModel{
         );
     }
 
+    static function getLoginFieldList()
+    {
+        return ["loginName"];
+    }
+
     public function getName(){
         return $this->loginName;
     }

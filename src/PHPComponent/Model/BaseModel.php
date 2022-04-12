@@ -78,10 +78,19 @@ abstract class BaseModel
                             $GLOBALS['cachedMap'][static::class . ".".$data["class"]] = array();
                             foreach ($cachedList[$data["class"]] as $each) {
                                 $each->customAssignField($cachedList, static::mergeOptions($key, array_search($data["class"], $options["joinClass"]),  $options));
-                                if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}])){
-                                    $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
+                                if(is_array($each->{$data["field"]})){
+                                    foreach($each->{$data["field"]} as $ID){
+                                        if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$ID])){
+                                            $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$ID] = array();
+                                        }
+                                        array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$ID], $each);
+                                    }
+                                }else{
+                                    if(!isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}])){
+                                        $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}] = array();
+                                    }
+                                    array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
                                 }
-                                array_push($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$each->{$data["field"]}], $each);
                             }
                         }
                         $this->$key = (isset($GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID])) ? $GLOBALS['cachedMap'][static::class . ".".$data["class"]][$this->ID] : array();
@@ -214,17 +223,24 @@ abstract class BaseModel
         return getDeepProp($this, $props);
     }
     public function updateChildren($parameters, $childrenClass, $childrenProps, $parentProps){
-        $this->update($parameters);
-        foreach($parameters[$childrenProps] as $child){
+        // $this->update($parameters);
+        foreach($parameters[$childrenProps] as &$child){
             if(isset($child["ID"]))
                 DB::getByID($childrenClass, $child["ID"])->update($child);
             else
-                $childrenClass::insert(array_merge($child, array($parentProps => $this->ID)));
+                $child["ID"] =  $childrenClass::insert(array_merge($child, array($parentProps => $this->ID)));
         }
+        $this->$childrenProps = DB::getAll_new($childrenClass, ["whereOperation" => [
+            [
+                "type" => "EQUAL",
+                "key" => $parentProps,
+                "value" => $this->ID
+            ]
+        ]]);
         foreach($this->$childrenProps as $originalChild){
             $shouldDelete = true;
-            foreach($parameters[$childrenProps] as $child){
-                if(isset($child["ID"]) && $originalChild->ID === intval($child["ID"])){
+            foreach($parameters[$childrenProps] as $childProp){
+                if(isset($childProp["ID"]) && $originalChild->ID == $childProp["ID"]){
                     $shouldDelete = false;
                     break;
                 }
