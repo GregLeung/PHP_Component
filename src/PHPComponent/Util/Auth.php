@@ -13,7 +13,8 @@ class Auth{
         if (getRequestToken($userClass) == "" || getRequestToken($userClass) == null || getRequestToken($userClass) == "null")
             return null;
         if (sizeof(filter(DB::getByColumn($userClass::$tokenClass, "token", getRequestToken($userClass)), function($token){return  time() < $token->expiredDate;})) == 0)
-            throw new BaseException("Token Invalid", -2);
+            // throw new BaseException("Token Invalid", -2);
+            return null;
         $token = DB::getByColumn($userClass::$tokenClass, "token", getRequestToken($userClass))[0];
         $token->expiredDate = time() + 6048000;
         DB::update(array("ID" => $token->ID, "expiredDate" => $token->expiredDate), $userClass::$tokenClass);

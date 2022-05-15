@@ -26,6 +26,8 @@ class BaseSystem
         try {
             apiKeyChecking();
             $GLOBALS['currentUser'] = getCurrentUser($this->userClass);
+            if(isset($this->parameters["checkUserRequired"]) && $this->parameters["checkUserRequired"])
+                self::checkUserRequired();
             $GLOBALS['currentMember'] = ($this->memberClass != null)? getCurrentUser($this->memberClass): null;
             if(isset(getallheaders()["Sessionid"]))
                 $GLOBALS['Sessionid'] = getallheaders()["Sessionid"];
@@ -318,6 +320,10 @@ class BaseSystem
                 $this->response = new Response(200, "Success", array());
                 break;
         }
+    }
+    public static function checkUserRequired(){
+        if($GLOBALS['currentUser'] == null)
+            throw new BaseException("Token Invalid", -2);
     }
 }
 

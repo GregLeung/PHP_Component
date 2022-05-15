@@ -883,3 +883,14 @@ function nameSearch($dataList, $percentageThreshold, $nameFieldList, $searchText
 function isNullOrEmptyString($str){
     return (!isset($str) || trim($str) === '');
 }
+
+function isThatDay($date, $current){
+    $current = strtotime($current);
+    $date = strtotime($date);
+    $datediff = $date - $current;
+    $difference = floor($datediff/(60*60*24));
+    if($difference==0)
+        return true;
+    else
+        return false;
+}
