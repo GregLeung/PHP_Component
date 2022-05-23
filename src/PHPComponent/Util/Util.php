@@ -337,6 +337,14 @@ function getAllApi($parameters, $class)
                                     return !in_array($value, $whereOperation["value"]);
                                 else
                                     return !in_array($whereOperation["value"],$value);
+                            case "ARRAY_OBJECT_EQUAL_VALUE":
+                                $objectList = getDeepProp($data, $whereOperation["key"]);
+                                foreach($objectList as $object){
+                                    $value = getDeepProp($object, $whereOperation["object_prop"]);
+                                    if($value == $whereOperation["value"])
+                                        return true;
+                                    }
+                                return false;
                         }
                     // }
                 }
@@ -391,18 +399,26 @@ function getAllApi($parameters, $class)
                                 }
                             }
                             return false;
-                            case "ARRAY_INCLUDES_VALUE":
-                                $value = getDeepProp($data, $whereOperation["key"]);
-                                if(is_array($whereOperation["value"]))
-                                    return in_array($value, $whereOperation["value"]);
-                                else
-                                    return in_array($whereOperation["value"],$value);
-                            case "ARRAY_NOT_INCLUDES_VALUE":
-                                $value = getDeepProp($data, $whereOperation["key"]);
-                                if(is_array($whereOperation["value"]))
-                                    return !in_array($value, $whereOperation["value"]);
-                                else
-                                    return !in_array($whereOperation["value"],$value);
+                        case "ARRAY_INCLUDES_VALUE":
+                            $value = getDeepProp($data, $whereOperation["key"]);
+                            if(is_array($whereOperation["value"]))
+                                return in_array($value, $whereOperation["value"]);
+                            else
+                                return in_array($whereOperation["value"],$value);
+                        case "ARRAY_NOT_INCLUDES_VALUE":
+                            $value = getDeepProp($data, $whereOperation["key"]);
+                            if(is_array($whereOperation["value"]))
+                                return !in_array($value, $whereOperation["value"]);
+                            else
+                                return !in_array($whereOperation["value"],$value);
+                        case "ARRAY_OBJECT_EQUAL_VALUE":
+                            $objectList = getDeepProp($data, $whereOperation["key"]);
+                            foreach($objectList as $object){
+                                $value = getDeepProp($object, $whereOperation["object_prop"]);
+                                if($value == $whereOperation["value"])
+                                    return true;
+                                }
+                            return false;
                     }
                         return false;
                 });

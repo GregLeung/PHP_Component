@@ -7,6 +7,7 @@ class BaseSystem
     public $userClass;
     public $memberClass;
     public $classList;
+    public $headers;
     function __construct($classList, $userClass, $memberClass = null)
     {
         ini_set('memory_limit', '1024M');
@@ -18,6 +19,7 @@ class BaseSystem
         $this->parameters = getParameter($_POST, $_GET);
         $this->userClass = $userClass;
         $this->memberClass = $memberClass;
+        $this->headers = getallheaders();
     }
 
     public function ready($function)
@@ -32,7 +34,7 @@ class BaseSystem
             if(isset(getallheaders()["Sessionid"]))
                 $GLOBALS['Sessionid'] = getallheaders()["Sessionid"];
             $this->response = generateBaseURL($this->classList, $this->parameters, array("userClass" => $this->userClass));
-            $this->response = $function($this->config, $this->parameters, $this->response);
+            $this->response = $function($this->config, $this->parameters, $this->response, $this->headers);
             $this->loginAPI();
             $this->onlineStoreAPI();
             $this->onlineStoreCMSAPI();

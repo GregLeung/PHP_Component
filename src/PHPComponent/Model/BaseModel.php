@@ -250,7 +250,7 @@ abstract class BaseModel
         }
     }
 
-    public function update($parameters){}
+    // public function update($parameters){}
 }
 
 class BaseTypeEnum
