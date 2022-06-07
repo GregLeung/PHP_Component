@@ -11,6 +11,7 @@ class BaseSystem
     function __construct($classList, $userClass, $memberClass = null)
     {
         ini_set('memory_limit', '1024M');
+        set_time_limit(900);
         $this->config = readConfig();
         $this->classList = $classList;
         DB::getInstance($this->config);

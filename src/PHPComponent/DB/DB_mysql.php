@@ -189,7 +189,7 @@ abstract class DB_mysql{
         $parameters["modifiedDate"] = $now->format('Y-m-d H:i:s');
         $result = self::$_conn->update($class::getSelfName(), array_merge(self::convertParametersToString($parameters, $class::getFieldsWithType()), array("modifiedUserID" => isset($GLOBALS['currentUser'])? $GLOBALS['currentUser']->ID: null )));
         if ($result == false) throw new Exception(self::$_conn->getLastError());
-        self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
+        // self::insertLog("UPDATE", stdClassToArray(self::getByID($class::getSelfName(), $parameters["ID"], BaseModel::SYSTEM)));
     } 
     static function update($parameters, $class)
     {
@@ -210,6 +210,22 @@ abstract class DB_mysql{
         $parameters = filterParameterByClass($parameters, $class);
         return self::insertRaw($parameters, $class);
     }
+    static function insertMulti($parameters, $class){
+        if(method_exists($class, "permissionInsertHandling") && !$class::permissionInsertHandling($parameters))
+            throw new Exception("Role Permission Denied");
+        $typeList =  $class::getFieldsWithType();
+        $mappedParameter = [];
+        foreach($parameters as $row){
+            $row = filterParameterByClass($row, $class);
+            unset($row['ID']);
+            unset($row['createdDate']);
+            unset($row['modifiedDate']);
+            unset($row['isDeleted']);
+            $row = array_merge(self::convertParametersToString(self::addDefaultValue($row, $typeList), $typeList), array("createdUserID" => isset($GLOBALS['currentUser'])? $GLOBALS['currentUser']->ID: null ));
+            $mappedParameter[] = $row;
+        }
+        self::$_conn->insertMulti($class::getSelfName(), $mappedParameter);
+    }
     static function isWhereConditionExisted($class, $whereConditionList){
         return sizeof(DB::getByWhereCondition($class, $whereConditionList)) > 0;
     }
@@ -224,7 +240,7 @@ abstract class DB_mysql{
         $typeList =  $class::getFieldsWithType();
         $id = self::$_conn->insert($class::getSelfName(), array_merge(self::convertParametersToString(self::addDefaultValue($parameters, $typeList), $typeList), array("createdUserID" => isset($GLOBALS['currentUser'])? $GLOBALS['currentUser']->ID: null )));
         if ($id == false) throw new Exception(self::$_conn->getLastError());
-        self::insertLog("INSERT", $parameters);
+        // self::insertLog("INSERT", $parameters);
         return $id;
     }
     static function join($db, $dbObjectList, $whereConditionList = array()){

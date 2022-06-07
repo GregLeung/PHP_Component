@@ -222,8 +222,7 @@ abstract class BaseModel
     public function getDeepProp($props){
         return getDeepProp($this, $props);
     }
-    public function updateChildren($parameters, $childrenClass, $childrenProps, $parentProps){
-        // $this->update($parameters);
+    public function updateChildren($parameters, $childrenClass, $childrenProps, $parentProps, $childCallback = null){
         foreach($parameters[$childrenProps] as &$child){
             if(isset($child["ID"]))
                 DB::getByID($childrenClass, $child["ID"])->update($child);
@@ -247,6 +246,11 @@ abstract class BaseModel
             }
             if($shouldDelete)
                 $originalChild->delete();
+        }
+        if($childCallback != null){
+            foreach($parameters[$childrenProps] as &$childParameter){
+                $childCallback($childParameter, DB::getByID($childrenClass, $childParameter["ID"]));
+            }
         }
     }
 
