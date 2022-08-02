@@ -91,7 +91,7 @@ function getRequestToken($userClass)
     try {
         if (array_key_exists($userClass::$tokenHeader, getallheaders())) return getallheaders()[$userClass::$tokenHeader];
         else return "";
-    } catch (Exception $exception) {
+    } catch (Error $exception) {
         writeCustomLog(json_encode($exception));
         return "";
     }
