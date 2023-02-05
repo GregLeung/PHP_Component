@@ -16,6 +16,33 @@ class BaseExcel {
     const FORMAT_PERCENTAGE = '0%';
     const FORMAT_PERCENTAGE_00 = '0.00%';
     
+    
+    const styleBorderingArray = [
+        'borders' => [
+            'top' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+            ],
+            'bottom' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+            ],
+        ],
+    ];
+    const styleBorderingForTotalArray = [
+        'borders' => [
+            'top' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+            ],
+            'bottom' => [
+                'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_DOUBLE,
+            ],
+        ],
+    ];
+    const styleFontBoldArray = [
+        'font' => [
+            'bold' => true,
+        ],
+    ];
+
     function __construct() {
         $this->spreadsheet = new Spreadsheet();
         $this->sheet = $this->spreadsheet->getActiveSheet();
@@ -155,5 +182,17 @@ class BaseExcel {
     function save($path){
         $writer = new Xlsx($this->spreadsheet);
         $writer->save($path);
+    }
+    
+    function setRowCellsStyleForSubTotalUnderline($excel, $styleBorderingArray, $colNums) {    
+        for ($i=0; $i < sizeof($colNums) ; $i++) { 
+            $setCellStyleResult = $excel->setCellStyle(Array($colNums[$i],($excel->getCurrentPosition())[1]), $styleBorderingArray);
+        }
+    }
+
+    function setRowCellsFontBoldStyle($excel, $styleFontBoldArray, $colNums) {    
+        for ($i=0; $i < sizeof($colNums) ; $i++) { 
+            $setCellStyleResult = $excel->setCellStyle(Array($colNums[$i],($excel->getCurrentPosition())[1]), $styleFontBoldArray);
+        }
     }
 }
