@@ -1,5 +1,6 @@
 {
     "name": "wailimcheng/php_component",
+    "version": "0.4.30",
     "type": "library",
     "authors": [{
         "name": "Cheng Wai Lim",
