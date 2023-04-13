@@ -350,6 +350,17 @@ function getAllApi($parameters, $class)
                 }
                 return false;
             });
+        elseif($parameters["whereOperationType"] == 'AND'){
+            $result = filter($result, function($data, $key) use($parameters){
+                $isMatches = true;
+                foreach ($parameters["whereOperation"] as $whereOperation) {
+                    if(dataMatchesCondition($data, $whereOperation) == false){
+                        $isMatches = false;
+                    }
+                }
+                return $isMatches;
+            });
+        }
         else
             foreach ($parameters["whereOperation"] as $whereOperation) {
                 $result = filter($result, function($data, $key) use($whereOperation){
@@ -428,6 +439,94 @@ function getAllApi($parameters, $class)
         $result = advancedSearch($result, $parameters["advancedSearch"]);
     if (isset($parameters["paging"])) $result =  paging($result, $parameters["paging"]["page"], $parameters["paging"]["pageSize"], isset($parameters["paging"]["search"]) ? $parameters["paging"]["search"] : "", isset($parameters["paging"]["sort"]) ? $parameters["paging"]["sort"] : array("prop" => "ID", "order" => "descending"));
     return $result;
+}
+
+function dataMatchesCondition($data, $whereOperation){
+    switch($whereOperation["type"]){
+        case "BETWEEN_TIME_RANGE_JOURNAL_AND_LEDGER":
+            $journal = array();
+            $ledger = array();
+            foreach(getDeepProp($data, 'journal') as $j ){
+                if(checkTimeIsInRange($whereOperation["value"][0], $whereOperation["value"][1], $j->date)){
+                    $journal[] = $j;
+                }
+            }
+
+            foreach(getDeepProp($data, 'ledger') as $l ){
+                if(checkTimeIsInRange($whereOperation["value"][0], $whereOperation["value"][1], $l->date)){
+                    $ledger[] = $l;
+                }
+            }
+            $data->journal = $journal;
+            $data->ledger = $ledger;
+            return true;
+        case "EQUAL":
+            return getDeepProp($data, $whereOperation["key"]) == $whereOperation["value"];
+        case "NOT_EQUAL":
+            return getDeepProp($data, $whereOperation["key"]) != $whereOperation["value"];
+        case "MORE":
+            return getDeepProp($data, $whereOperation["key"]) > $whereOperation["value"];
+        case "LESS":
+            return getDeepProp($data, $whereOperation["key"]) < $whereOperation["value"];
+        case "MORE_OR_EQUAL":
+            return getDeepProp($data, $whereOperation["key"]) >= $whereOperation["value"];
+        case "LESS_OR_EQUAL":
+            return getDeepProp($data, $whereOperation["key"]) <= $whereOperation["value"];
+        case "LENGTH_EQUAL":
+            return sizeof(getDeepProp($data, $whereOperation["key"])) == $whereOperation["value"];
+        case "LENGTH_MORE":
+            return sizeof(getDeepProp($data, $whereOperation["key"])) > $whereOperation["value"];
+        case "LENGTH_LESS":
+            return sizeof(getDeepProp($data, $whereOperation["key"])) < $whereOperation["value"];
+        case "LENGTH_MORE_OR_EQUAL":
+            return sizeof(getDeepProp($data, $whereOperation["key"])) >= $whereOperation["value"];
+        case "LENGTH_LESS_OR_EQUAL":
+            return sizeof(getDeepProp($data, $whereOperation["key"])) <= $whereOperation["value"];
+        case "BETWEEN":
+            $value = getDeepProp($data, $whereOperation["key"]);
+            if($value == null)
+                return false;
+            $start = $whereOperation["value"][0];
+            $end = $whereOperation["value"][1];
+            return $value >= $start && $value <= $end;
+        case "BETWEEN_TIME_RANGE":
+            $value = getDeepProp($data, $whereOperation["key"]);
+            if($value == null)
+                return false;
+            $startTime = strtotime($whereOperation["value"][0]);
+            $endTime = strtotime($whereOperation["value"][1]);
+            return strtotime($value) >= $startTime && strtotime($value) <= $endTime;
+        case "ARRAY_INCLUDES_ARRAY":
+            $valueList = getDeepProp($data, $whereOperation["key"]);
+            foreach($valueList as $value){
+                foreach($whereOperation["value"] as $whereOperationValue){
+                    if($whereOperation["value"] == $value)
+                        return true;
+                }
+            }
+            return false;
+        case "ARRAY_INCLUDES_VALUE":
+            $value = getDeepProp($data, $whereOperation["key"]);
+            if(is_array($whereOperation["value"]))
+                return in_array($value, $whereOperation["value"]);
+            else
+                return in_array($whereOperation["value"],$value);
+        case "ARRAY_NOT_INCLUDES_VALUE":
+            $value = getDeepProp($data, $whereOperation["key"]);
+            if(is_array($whereOperation["value"]))
+                return !in_array($value, $whereOperation["value"]);
+            else
+                return !in_array($whereOperation["value"],$value);
+        case "ARRAY_OBJECT_EQUAL_VALUE":
+            $objectList = getDeepProp($data, $whereOperation["key"]);
+            foreach($objectList as $object){
+                $value = getDeepProp($object, $whereOperation["object_prop"]);
+                if($value == $whereOperation["value"])
+                    return true;
+                }
+            return false;
+    }
+    return false;
 }
 
 function generateBaseURL($arrayOfModel, $parameters, $options)
