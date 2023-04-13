@@ -441,6 +441,13 @@ function getAllApi($parameters, $class)
     return $result;
 }
 
+function checkTimeIsInRange($startTime, $endTime, $value){
+    if($value == null)
+        return false;
+    $result = strtotime($value) >= strtotime($startTime) && strtotime($value) <= strtotime($endTime);
+    return $result;
+}
+
 function dataMatchesCondition($data, $whereOperation){
     switch($whereOperation["type"]){
         case "BETWEEN_TIME_RANGE_JOURNAL_AND_LEDGER":
