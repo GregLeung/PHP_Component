@@ -1,10 +1,10 @@
 {
-    "name": "wailimcheng/php_component",
-    "version": "0.4.30",
+    "name": "gregleung/php_component",
+    "version": "0.4.31",
     "type": "library",
     "authors": [{
-        "name": "Cheng Wai Lim",
-        "email": "s1113618@s.eduhk.hk"
+        "name": "Greg Leung",
+        "email": "km0205hk@gmail.com"
     }],
     "require": {
         "thingengineer/mysqli-database-class": "dev-master",
